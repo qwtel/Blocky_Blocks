@@ -8,5 +8,6 @@
 *.idb
 *.pdb
 *.obj
+*.exe
 bin
 build
