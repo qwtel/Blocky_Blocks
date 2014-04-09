@@ -25,12 +25,13 @@ GLuint vertexShader;
 GLuint fragmentShader;
 GLuint program;
 GLuint vao;
-GLuint matrixID;
 
-mat4 mvp;
+GLuint matrixID;
 
 Triangle* t;
 Block* b;
+
+// TODO: Why are there some functions starting with a capital letter in C++?
 
 void update(double deltaT);
 void draw();
@@ -55,7 +56,7 @@ int main()
     glDepthFunc(GL_LESS);
 
     t = new Triangle();
-    b = new Block();
+    b = new Block(matrixID);
 
     bool running = true;
     double lastTime = 0;
@@ -101,19 +102,20 @@ int main()
 void update(double deltaT) 
 {
     computeMatricesFromInputs(window, float(deltaT));
-    mat4 projectionMatrix = getProjectionMatrix();
-    mat4 viewMatrix = getViewMatrix();
-    mat4 modelMatrix = mat4(1.0);
-    mat4 mvp = projectionMatrix * viewMatrix * modelMatrix;
 
-    glUniformMatrix4fv(matrixID, 1, GL_FALSE, &mvp[0][0]);
+    b->update(deltaT);
 }
 
 void draw() 
 {
-    // loop through scene graph?
+    // TODO: loop through scene graph?
+
     // t->draw();
-    b->draw();
+
+    mat4 projectionMatrix = getProjectionMatrix();
+    mat4 viewMatrix = getViewMatrix();
+
+    b->draw(projectionMatrix * viewMatrix);
 }
 
 void cleanup()

@@ -1,7 +1,11 @@
 #include "Block.h"
 
-Block::Block(void)
+Block::Block(GLuint matrixID)
 {
+    matrixID_ = matrixID;
+    modelMatrix = mat4();
+    gDegreesRotated = 0;
+
     static const GLfloat g_vertex_buffer_data[] = {
         -1.0f,-1.0f,-1.0f, // triangle 1 : begin
         -1.0f,-1.0f, 1.0f,
@@ -66,10 +70,21 @@ Block::~Block(void)
 
 void Block::update(double deltaT)
 {
+    const GLfloat degreesPerSecond = 90.0f;
+    gDegreesRotated += deltaT * degreesPerSecond;
+
+    modelMatrix = rotate(mat4(), gDegreesRotated, vec3(0,1,0));
+
+    //don't go over 360 degrees
+    while (gDegreesRotated > 360.0f) gDegreesRotated -= 360.0f;
 }
 
-void Block::draw()
+void Block::draw(mat4 vp)
 {
+    mat4 mvp = vp * modelMatrix;
+
+    glUniformMatrix4fv(matrixID_, 1, GL_FALSE, &mvp[0][0]);
+
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
     glVertexAttribPointer(
