@@ -5,45 +5,73 @@
 #include <GLFW\glfw3.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 using namespace glm;
 
-GLFWwindow* openWindow();
-void update(double deltaT);
-void draw();
-void cleanup(GLuint program, GLuint vertexShader, GLuint fragmentShader);
+#include "helpers.h"
+#include "Scene\Triangle.h"
+#include "Scene\Block.h"
 
 int WIDTH = 800;
 int HEIGHT = 600;
 
-#include "loadShader.h"
-#include "Scene\Triangle.h"
-
-GLuint createProgram(GLuint vertexShader, GLuint fragmentShader);
+GLuint vertexShader;
+GLuint fragmentShader;
+GLuint program;
+GLuint vao;
 
 Triangle* t;
+Block* b;
+
+void update(double deltaT);
+void draw();
+void cleanup();
 
 int main() 
 {
     // (1) init everything you need
-    GLFWwindow* window = openWindow();
-
-    // Somewhere else
-    glClearColor(0.14f, 0.25f, 0.43f, 0.0f);
-    glViewport(0, 0, WIDTH, HEIGHT);
+    GLFWwindow* window = openWindow(WIDTH, HEIGHT);
 
     bool running = true;
     double lastTime = 0;
 
-    GLuint vertexShader = loadShader(GL_VERTEX_SHADER, "Shader/vertexshader.vert");
-    GLuint fragmentShader = loadShader(GL_FRAGMENT_SHADER, "Shader/fragmentshader.frag");
-    GLuint program = createProgram(vertexShader, fragmentShader);
+    vertexShader = loadShader(GL_VERTEX_SHADER, "Shader/vertexshader.vert");
+    fragmentShader = loadShader(GL_FRAGMENT_SHADER, "Shader/fragmentshader.frag");
+    program = createProgram(vertexShader, fragmentShader);
 
     // This is evil..
-    GLuint VertexArrayID;
-    glGenVertexArrays(1, &VertexArrayID);
-    glBindVertexArray(VertexArrayID);
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    // <MPV>
+    // Get a handle for our "MVP" uniform
+    GLuint MatrixID = glGetUniformLocation(program, "mvp");
+
+    // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+    mat4 projection = perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
+
+    // Or, for an ortho camera :
+    //mat4 Projection = ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // In world coordinates
+
+    // Camera matrix
+    mat4 view = lookAt(
+        vec3(4,3,3), // Camera is at (4,3,3), in World Space
+        vec3(0,0,0), // and looks at the origin
+        vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+        );
+
+    // Model matrix : an identity matrix (model will be at the origin)
+    mat4 model = mat4(1.0f);
+
+    // Our ModelViewProjection : multiplication of our 3 matrices
+    mat4 mvp = projection * view * model; // Remember, matrix multiplication is the other way around
+    // </MPV>
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
 
     t = new Triangle();
+    b = new Block();
 
     while (running && !glfwWindowShouldClose(window))
     {
@@ -51,6 +79,10 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(program);
+
+        // <MPV>
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
+        // </MPV>
 
         // (3) compute the frame time delta
         double time = glfwGetTime();
@@ -78,101 +110,9 @@ int main()
     }
 
     // (8) clean up!
-    cleanup(program, vertexShader, fragmentShader);
-
-    glDeleteVertexArrays(1, &VertexArrayID);
-
-    glDeleteProgram(program);
+    cleanup();
 
     glfwTerminate();
-}
-
-GLuint createProgram(GLuint vertexShader, GLuint fragmentShader)
-{
-    // Create program
-    GLuint program = glCreateProgram();
-
-    if (program == 0)
-    {
-        fprintf(stderr, "Failed to create shader program");
-        system("PAUSE");
-        exit(-1);
-    }
-
-    // Attach shader to program
-    glAttachShader(program, vertexShader);
-    glAttachShader(program, fragmentShader);
-
-    // Bind output
-    glBindFragDataLocation(program, 0, "fragColor");
-
-    // Link programs
-    glLinkProgram(program);
-
-    // check for errors
-    GLint succeded;
-    glGetProgramiv(program, GL_LINK_STATUS, &succeded);
-
-    if (!succeded)
-    {
-        // output errors
-        GLint logSize;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logSize);
-
-        auto message = new char[logSize];
-        glGetProgramInfoLog(program, logSize, NULL, message);
-
-        fprintf(stderr, "Failed to link shader program");
-        fprintf(stderr, "%s", message);
-        system("PAUSE");
-
-        delete[] message;
-        exit(-1);
-    }
-
-    return program;
-}
-
-GLFWwindow* openWindow() 
-{
-    // (1) init glfw
-    if (!glfwInit()) 
-    {
-        fprintf(stderr, "Failed to init glfw");
-        system("PAUSE");
-        exit(-1);
-    }
-
-    // (2) set window hints
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    // (3) open window
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Hello, CGUE!", nullptr, nullptr);
-    if (!window)
-    {
-        glfwTerminate();
-        fprintf(stderr, "Failed to open window"); 
-        system("PAUSE");
-        exit(-1);
-    }
-
-    glfwMakeContextCurrent(window);
-
-    glewExperimental = GL_TRUE; 
-
-    // (4) init glew
-    if (glewInit() != GLEW_OK)
-    {
-        fprintf(stderr, "Failed to initialize glew");
-        system("PAUSE");
-        exit(-1);
-    }
-
-    fprintf(stdout, "Opened OpenGL Window.\n");
-
-    return window;
 }
 
 void update(double deltaT) 
@@ -182,14 +122,17 @@ void update(double deltaT)
 void draw() 
 {
     // loop through scene graph?
-    t->draw();
+    // t->draw();
+    b->draw();
 }
 
-void cleanup(GLuint program, GLuint vertexShader, GLuint fragmentShader)
+void cleanup()
 {
     delete t;
+    delete b;
 
     glDeleteProgram(program);
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+    glDeleteVertexArrays(1, &vao);
 }

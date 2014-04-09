@@ -10,5 +10,6 @@ public:
     virtual void draw();
 private:
     GLuint vertexbuffer;
+    GLfloat* data;
 };
 

@@ -30,10 +30,10 @@
     <ClCompile Include="Scene\Block.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="loadShader.cpp">
+    <ClCompile Include="Scene\Triangle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Triangle.cpp">
+    <ClCompile Include="helpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,10 +50,10 @@
     <ClInclude Include="Scene\Block.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="loadShader.h">
+    <ClInclude Include="Scene\Triangle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Triangle.h">
+    <ClInclude Include="helpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

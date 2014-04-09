@@ -82,7 +82,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="loadShader.cpp" />
+    <ClCompile Include="helpers.cpp" />
     <ClCompile Include="Scene\Block.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Scene\Triangle.cpp" />
@@ -91,7 +91,7 @@
     <ClCompile Include="Tutorial\Student.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="loadShader.h" />
+    <ClInclude Include="helpers.h" />
     <ClInclude Include="Scene\Block.h" />
     <ClInclude Include="Scene\Triangle.h" />
     <ClInclude Include="Tutorial\Person.h" />
