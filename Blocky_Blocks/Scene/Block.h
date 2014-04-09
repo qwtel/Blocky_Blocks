@@ -1,7 +1,6 @@
 #pragma once
 #include "sceneobject.h"
-class Block :
-    public SceneObject
+class Block : public SceneObject
 {
 public:
     Block(void);

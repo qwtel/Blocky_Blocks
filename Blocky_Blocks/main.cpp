@@ -14,30 +14,20 @@ using namespace glm;
 GLFWwindow* openWindow();
 void update(double deltaT);
 void draw();
-void Cleanup();
+void cleanup(GLuint program, GLuint vertexShader, GLuint fragmentShader);
 
 int WIDTH = 800;
 int HEIGHT = 600;
 
-#include "Tutorial/Person.h"
-#include "Tutorial/Student.h"
-
 #include "loadShader.h"
+#include "Scene\Triangle.h"
+
+GLuint createProgram(GLuint vertexShader, GLuint fragmentShader);
+
+Triangle* t;
 
 int main() 
 {
-
-    Person* p = new Person("Florian");
-    fprintf(stdout, "%s\n", p->getName().c_str());
-    fprintf(stdout, "%s\n", p->saySomething().c_str());
-
-    Student* s = new Student("Florian", 1058208);
-
-    fprintf(stdout, "%s\n", s->saySomething().c_str());
-
-    delete p;
-    delete s;
-
     // (1) init everything you need
     GLFWwindow* window = openWindow();
 
@@ -47,19 +37,28 @@ int main()
 
     bool running = true;
     double lastTime = 0;
-    double deltaT;
 
-    GLuint vertexShader = loadShader("Shader/vertexshader.vert", GL_VERTEX_SHADER);
-    GLuint fragmentShader = loadShader("Shader/fragmentshader.frag", GL_FRAGMENT_SHADER);
+    GLuint vertexShader = loadShader(GL_VERTEX_SHADER, "Shader/vertexshader.vert");
+    GLuint fragmentShader = loadShader(GL_FRAGMENT_SHADER, "Shader/fragmentshader.frag");
+    GLuint program = createProgram(vertexShader, fragmentShader);
+
+    // This is evil..
+    GLuint VertexArrayID;
+    glGenVertexArrays(1, &VertexArrayID);
+    glBindVertexArray(VertexArrayID);
+
+    t = new Triangle();
 
     while (running && !glfwWindowShouldClose(window))
     {
         // (2) clear the frame and depth buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glUseProgram(program);
+
         // (3) compute the frame time delta
         double time = glfwGetTime();
-        deltaT = time - lastTime;
+        double deltaT = time - lastTime;
         lastTime = time;
 
         // (4) react to user input
@@ -71,17 +70,71 @@ int main()
 
         // (6) draw all game components
         draw();
+
+        // (6.5) bla
         glfwSwapBuffers(window);
 
         // (7) check for errors
-        if (glGetError() != GL_NO_ERROR) {
-            fprintf(stderr, "GL ERROR DETECTED!!!"); 
+        if (glGetError() != GL_NO_ERROR) 
+        {
+            fprintf(stderr, "GL ERROR DETECTED!!!\n"); 
         }
     }
 
     // (8) clean up!
-    Cleanup();
+    cleanup(program, vertexShader, fragmentShader);
+
+    glDeleteVertexArrays(1, &VertexArrayID);
+
+    glDeleteProgram(program);
+
     glfwTerminate();
+}
+
+GLuint createProgram(GLuint vertexShader, GLuint fragmentShader)
+{
+    // Create program
+    GLuint program = glCreateProgram();
+
+    if (program == 0)
+    {
+        fprintf(stderr, "Failed to create shader program");
+        system("PAUSE");
+        exit(-1);
+    }
+
+    // Attach shader to program
+    glAttachShader(program, vertexShader);
+    glAttachShader(program, fragmentShader);
+
+    // Bind output
+    glBindFragDataLocation(program, 0, "fragColor");
+
+    // Link programs
+    glLinkProgram(program);
+
+    // check for errors
+    GLint succeded;
+    glGetProgramiv(program, GL_LINK_STATUS, &succeded);
+
+    if (!succeded)
+    {
+        // output errors
+        GLint logSize;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logSize);
+
+        auto message = new char[logSize];
+        glGetProgramInfoLog(program, logSize, NULL, message);
+
+        fprintf(stderr, "Failed to link shader program");
+        fprintf(stderr, "%s", message);
+        system("PAUSE");
+
+        delete[] message;
+        exit(-1);
+    }
+
+    return program;
 }
 
 GLFWwindow* openWindow() 
@@ -121,7 +174,7 @@ GLFWwindow* openWindow()
         exit(-1);
     }
 
-    fprintf(stdout, "Opened OpenGL Window");
+    fprintf(stdout, "Opened OpenGL Window.\n");
 
     return window;
 }
@@ -132,8 +185,15 @@ void update(double deltaT)
 
 void draw() 
 {
+    // loop through scene graph?
+    t->draw();
 }
 
-void Cleanup()
+void cleanup(GLuint program, GLuint vertexShader, GLuint fragmentShader)
 {
+    delete t;
+
+    glDeleteProgram(program);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
 }

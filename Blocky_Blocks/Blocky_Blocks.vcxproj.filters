@@ -33,6 +33,9 @@
     <ClCompile Include="loadShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Triangle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\Student.h">
@@ -50,9 +53,14 @@
     <ClInclude Include="loadShader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Scene\Triangle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shader\fragmentshader.frag" />
+    <Text Include="Shader\fragmentshader.frag" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Shader\vertexshader.vert" />
   </ItemGroup>
 </Project>
