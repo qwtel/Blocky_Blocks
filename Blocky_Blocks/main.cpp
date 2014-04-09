@@ -22,6 +22,8 @@ int HEIGHT = 600;
 #include "Tutorial/Person.h"
 #include "Tutorial/Student.h"
 
+#include "loadShader.h"
+
 int main() 
 {
 
@@ -46,6 +48,9 @@ int main()
     bool running = true;
     double lastTime = 0;
     double deltaT;
+
+    GLuint vertexShader = loadShader("Shader/vertexshader.vert", GL_VERTEX_SHADER);
+    GLuint fragmentShader = loadShader("Shader/fragmentshader.frag", GL_FRAGMENT_SHADER);
 
     while (running && !glfwWindowShouldClose(window))
     {
