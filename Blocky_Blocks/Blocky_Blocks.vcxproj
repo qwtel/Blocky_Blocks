@@ -82,6 +82,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="controls.cpp" />
     <ClCompile Include="helpers.cpp" />
     <ClCompile Include="Scene\Block.cpp" />
     <ClCompile Include="main.cpp" />
@@ -102,6 +103,7 @@
     <Text Include="Shader\fragmentshader.frag" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="controls.h" />
     <None Include="Shader\vertexshader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

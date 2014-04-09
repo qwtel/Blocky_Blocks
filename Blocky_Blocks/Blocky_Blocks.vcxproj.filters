@@ -36,6 +36,9 @@
     <ClCompile Include="helpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="controls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\Student.h">
@@ -62,5 +65,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\vertexshader.vert" />
+    <None Include="controls.h" />
   </ItemGroup>
 </Project>

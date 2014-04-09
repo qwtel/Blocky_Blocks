@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -9,16 +11,23 @@
 using namespace glm;
 
 #include "helpers.h"
+#include "controls.h"
+
 #include "Scene\Triangle.h"
 #include "Scene\Block.h"
 
 int WIDTH = 800;
 int HEIGHT = 600;
 
+GLFWwindow* window;
+
 GLuint vertexShader;
 GLuint fragmentShader;
 GLuint program;
 GLuint vao;
+GLuint matrixID;
+
+mat4 mvp;
 
 Triangle* t;
 Block* b;
@@ -30,42 +39,17 @@ void cleanup();
 int main() 
 {
     // (1) init everything you need
-    GLFWwindow* window = openWindow(WIDTH, HEIGHT);
-
-    bool running = true;
-    double lastTime = 0;
+    window = openWindow(WIDTH, HEIGHT);
 
     vertexShader = loadShader(GL_VERTEX_SHADER, "Shader/vertexshader.vert");
     fragmentShader = loadShader(GL_FRAGMENT_SHADER, "Shader/fragmentshader.frag");
     program = createProgram(vertexShader, fragmentShader);
 
-    // This is evil..
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    // <MPV>
     // Get a handle for our "MVP" uniform
-    GLuint MatrixID = glGetUniformLocation(program, "mvp");
-
-    // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-    mat4 projection = perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
-
-    // Or, for an ortho camera :
-    //mat4 Projection = ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // In world coordinates
-
-    // Camera matrix
-    mat4 view = lookAt(
-        vec3(4,3,3), // Camera is at (4,3,3), in World Space
-        vec3(0,0,0), // and looks at the origin
-        vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
-        );
-
-    // Model matrix : an identity matrix (model will be at the origin)
-    mat4 model = mat4(1.0f);
-
-    // Our ModelViewProjection : multiplication of our 3 matrices
-    mat4 mvp = projection * view * model; // Remember, matrix multiplication is the other way around
-    // </MPV>
+    matrixID = glGetUniformLocation(program, "mvp");
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -73,16 +57,15 @@ int main()
     t = new Triangle();
     b = new Block();
 
+    bool running = true;
+    double lastTime = 0;
+
     while (running && !glfwWindowShouldClose(window))
     {
         // (2) clear the frame and depth buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(program);
-
-        // <MPV>
-        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
-        // </MPV>
 
         // (3) compute the frame time delta
         double time = glfwGetTime();
@@ -117,6 +100,13 @@ int main()
 
 void update(double deltaT) 
 {
+    computeMatricesFromInputs(window, float(deltaT));
+    mat4 projectionMatrix = getProjectionMatrix();
+    mat4 viewMatrix = getViewMatrix();
+    mat4 modelMatrix = mat4(1.0);
+    mat4 mvp = projectionMatrix * viewMatrix * modelMatrix;
+
+    glUniformMatrix4fv(matrixID, 1, GL_FALSE, &mvp[0][0]);
 }
 
 void draw() 
