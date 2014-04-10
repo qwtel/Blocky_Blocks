@@ -20,9 +20,6 @@ Triangle::Triangle(void)
 Triangle::~Triangle(void)
 {
     glDeleteBuffers(1, &vertexbuffer);
-
-    // TODO: Why?
-    // delete data;
 }
 
 void Triangle::update(double deltaT)

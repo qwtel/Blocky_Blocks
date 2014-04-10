@@ -15,11 +15,3 @@ using namespace std;
 #include <GLFW\glfw3.h>
 
 GLFWwindow* openWindow(int width, int height);
-
-GLuint loadShader(GLenum shaderType, const char* shaderPath);
-
-string readShader(const char * shaderPath);
-
-GLuint compileShader(GLuint shaderID, string shaderCode);
-
-GLuint createProgram(GLuint vertexShader, GLuint fragmentShader);

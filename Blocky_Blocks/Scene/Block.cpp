@@ -70,7 +70,7 @@ Block::~Block(void)
 
 void Block::update(double deltaT)
 {
-    const GLfloat degreesPerSecond = 90.0f;
+    const GLfloat degreesPerSecond = 180.0f;
     gDegreesRotated += deltaT * degreesPerSecond;
 
     modelMatrix = rotate(mat4(), gDegreesRotated, vec3(0,1,0));
