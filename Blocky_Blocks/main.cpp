@@ -24,14 +24,8 @@ int HEIGHT = 600;
 
 GLFWwindow* window;
 
-GLuint vao;
-
-GLuint matrixID;
-
 Triangle* t;
 Block* b;
-
-// TODO: Why are there some functions starting with a capital letter in C++?
 
 void update(double deltaT);
 void draw();
@@ -42,21 +36,18 @@ int main()
     // (1) init everything you need
     window = openWindow(WIDTH, HEIGHT);
 
-    Shader vertexShader = Shader("Blocky_Blocks/Shader/vertexshader.vert", GL_VERTEX_SHADER);
-    Shader fragmentShader = Shader("Blocky_Blocks/Shader/fragmentshader.frag", GL_FRAGMENT_SHADER);
+    Shader vertexShader = Shader("Blocky_Blocks/Shader/textureVertexshader.vert", GL_VERTEX_SHADER);
+    Shader fragmentShader = Shader("Blocky_Blocks/Shader/textureFragmentshader.frag", GL_FRAGMENT_SHADER);
     Program program = Program(vertexShader, fragmentShader);
 
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
     // Get a handle for our "MVP" uniform
-    matrixID = glGetUniformLocation(program.object(), "mvp");
+    GLuint matrixID = glGetUniformLocation(program.object(), "mvp");
+
+    t = new Triangle(program);
+    // b = new Block(matrixID);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-
-    t = new Triangle();
-    b = new Block(matrixID);
 
     bool running = true;
     double lastTime = 0;
@@ -65,8 +56,6 @@ int main()
     {
         // (2) clear the frame and depth buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glUseProgram(program.object());
 
         // (3) compute the frame time delta
         double time = glfwGetTime();
@@ -83,7 +72,7 @@ int main()
         // (6) draw all game components
         draw();
 
-        // (6.5) bla
+        // (6.5) swap buffers
         glfwSwapBuffers(window);
 
         // (7) check for errors
@@ -103,25 +92,25 @@ void update(double deltaT)
 {
     computeMatricesFromInputs(window, float(deltaT));
 
-    b->update(deltaT);
+    // b->update(deltaT);
 }
 
 void draw() 
 {
     // TODO: loop through scene graph?
 
-    // t->draw();
-
     mat4 projectionMatrix = getProjectionMatrix();
     mat4 viewMatrix = getViewMatrix();
 
-    b->draw(projectionMatrix * viewMatrix);
+    t->draw();
+
+    // b->draw(projectionMatrix * viewMatrix);
 }
 
 void cleanup()
 {
     delete t;
-    delete b;
+    // delete b;
 
-    glDeleteVertexArrays(1, &vao);
+    // glDeleteVertexArrays(1, &vao);
 }

@@ -1,25 +1,51 @@
 #include "Triangle.h"
 
-Triangle::Triangle(void)
+#include "../External/Bitmap.h"
+#include "../Holder/Texture2.h"
+
+Triangle::Triangle(Program& program) :
+    SceneObject(program)
 {
-    // Should be in Triangle.draw
-    GLfloat g_vertex_buffer_data[] = { 
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        0.0f,  1.0f, 0.0f,
+    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Blocky_Blocks/Texture/hazard.png");
+    bmp.flipVertically();
+    Texture2* texture = new Texture2(bmp);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture->object());
+    glUniform1i(_program.uniform("tex"), 0); //set to 0 because the texture is bound to GL_TEXTURE0
+
+    // make and bind the VAO
+    glGenVertexArrays(1, &_vao);
+    glBindVertexArray(_vao);
+
+    // make and bind the VBO
+    glGenBuffers(1, &_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+
+    // Put the three triangle verticies into the VBO
+    GLfloat vertexData[] = {
+        //  X     Y     Z       U     V
+        0.0f, 0.8f, 0.0f,   0.5f, 1.0f,
+        -0.8f,-0.8f, 0.0f,   0.0f, 0.0f,
+        0.8f,-0.8f, 0.0f,   1.0f, 0.0f,
     };
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
 
-    data = g_vertex_buffer_data;
+    // connect the xyz to the "vert" attribute of the vertex shader
+    glEnableVertexAttribArray(_program.attrib("vert"));
+    glVertexAttribPointer(_program.attrib("vert"), 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), NULL);
 
-    glGenBuffers(1, &vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+    // connect the uv coords to the "vertTexCoord" attribute of the vertex shader
+    glEnableVertexAttribArray(_program.attrib("vertTexCoord"));
+    glVertexAttribPointer(_program.attrib("vertTexCoord"), 2, GL_FLOAT, GL_TRUE, 5*sizeof(GLfloat), (const GLvoid*)(3 * sizeof(GLfloat)));
+
+    // unbind the VBO and VAO
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
-
 
 Triangle::~Triangle(void)
 {
-    glDeleteBuffers(1, &vertexbuffer);
 }
 
 void Triangle::update(double deltaT)
@@ -28,20 +54,15 @@ void Triangle::update(double deltaT)
 
 void Triangle::draw()
 {
-    glEnableVertexAttribArray(0);
+    // bind the program (the shaders)
+    glUseProgram(_program.object());
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glVertexAttribPointer(
-        0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-        3,                  // size
-        GL_FLOAT,           // type
-        GL_FALSE,           // normalized?
-        0,                  // stride
-        (void*)0            // array buffer offset
-        );
+    // bind the VAO (the triangle)
+    glBindVertexArray(_vao);
 
-    // Draw the triangle !
-    glDrawArrays(GL_TRIANGLES, 0, 3); // Starting from vertex 0; 3 vertices total -> 1 triangle
+    // draw the VAO
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    glDisableVertexAttribArray(0);
+    glBindVertexArray(0);
+    glUseProgram(0);
 }

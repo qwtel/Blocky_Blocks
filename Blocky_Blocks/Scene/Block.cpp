@@ -1,8 +1,8 @@
 #include "Block.h"
 
-Block::Block(GLuint matrixID)
+Block::Block(Program& program)
+    : SceneObject(program)
 {
-    matrixID_ = matrixID;
     modelMatrix = mat4();
     gDegreesRotated = 0;
 

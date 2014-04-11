@@ -1,15 +1,16 @@
 #pragma once
-#include "sceneobject.h"
-class Triangle : public SceneObject
+
+#include "SceneObject.h"
+
+class Triangle : 
+    public SceneObject
 {
 public:
-    Triangle(void);
+    Triangle(Program& program);
     virtual ~Triangle(void);
 
     virtual void update(double deltaT);
     virtual void draw();
 private:
-    GLuint vertexbuffer;
-    GLfloat* data;
 };
 

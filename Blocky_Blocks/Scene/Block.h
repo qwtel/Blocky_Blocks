@@ -11,7 +11,7 @@ using namespace glm;
 class Block : public SceneObject
 {
 public:
-    Block(GLuint matrixID);
+    Block(Program& program);
     virtual ~Block(void);
 
     virtual void update(double deltaT);
