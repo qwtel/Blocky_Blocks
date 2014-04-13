@@ -55,7 +55,7 @@ void Triangle::update(double deltaT)
 void Triangle::draw()
 {
     // bind the program (the shaders)
-    glUseProgram(_program.object());
+    // glUseProgram(_program.object());
 
     // bind the VAO (the triangle)
     glBindVertexArray(_vao);
@@ -63,6 +63,9 @@ void Triangle::draw()
     // draw the VAO
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
+    // unbind the VAO (the triangle)
     glBindVertexArray(0);
-    glUseProgram(0);
+
+    // unbind the program (the shaders)
+    // glUseProgram(0);
 }

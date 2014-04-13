@@ -72,7 +72,7 @@ GLint Program::checkedInvoke(const GLchar* name, const function<GLint(void)>& f)
 {
     if(!name) 
     {
-        fprintf(stderr, "name was NULL");
+        fprintf(stderr, "name was NULL\n");
         system("PAUSE");
         exit(-1);
     }
@@ -81,7 +81,7 @@ GLint Program::checkedInvoke(const GLchar* name, const function<GLint(void)>& f)
 
     if(attrib == -1)
     {
-        fprintf(stderr, "Program name not found: %s", name);
+        fprintf(stderr, "Program name not found: %s\n", name);
         system("PAUSE");
         exit(-1);
     }

@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 using namespace glm;
 
@@ -19,8 +20,7 @@ using namespace glm;
 #include "Scene/Triangle.h"
 #include "Scene/Block.h"
 
-int WIDTH = 800;
-int HEIGHT = 600;
+const vec2 SCREEN_SIZE(800, 600);
 
 GLFWwindow* window;
 
@@ -34,17 +34,23 @@ void cleanup();
 int main() 
 {
     // (1) init everything you need
-    window = openWindow(WIDTH, HEIGHT);
+    window = openWindow(SCREEN_SIZE.x, SCREEN_SIZE.y);
 
-    Shader vertexShader = Shader("Blocky_Blocks/Shader/textureVertexshader.vert", GL_VERTEX_SHADER);
+    Shader vertexShader = Shader("Blocky_Blocks/Shader/cameraVertexShader.vert", GL_VERTEX_SHADER);
     Shader fragmentShader = Shader("Blocky_Blocks/Shader/textureFragmentshader.frag", GL_FRAGMENT_SHADER);
     Program program = Program(vertexShader, fragmentShader);
 
-    // Get a handle for our "MVP" uniform
-    GLuint matrixID = glGetUniformLocation(program.object(), "mvp");
+    // bind the program (the shaders)
+    glUseProgram(program.object());
+
+    mat4 projection = perspective<float>(50.0, SCREEN_SIZE.x / SCREEN_SIZE.y, 0.1, 10.0);
+    glUniformMatrix4fv(program.uniform("projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+    mat4 camera = lookAt(vec3(3,3,3), vec3(0,0,0), vec3(0,1,0));
+    glUniformMatrix4fv(program.uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera));
 
     t = new Triangle(program);
-    // b = new Block(matrixID);
+    b = new Block(program);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -90,21 +96,20 @@ int main()
 
 void update(double deltaT) 
 {
-    computeMatricesFromInputs(window, float(deltaT));
-
-    // b->update(deltaT);
+    //computeMatricesFromInputs(window, float(deltaT));
+    b->update(deltaT);
 }
 
 void draw() 
 {
     // TODO: loop through scene graph?
 
-    mat4 projectionMatrix = getProjectionMatrix();
-    mat4 viewMatrix = getViewMatrix();
+    //mat4 projectionMatrix = getProjectionMatrix();
+    //mat4 viewMatrix = getViewMatrix();
 
-    t->draw();
+    // t->draw();
 
-    // b->draw(projectionMatrix * viewMatrix);
+    b->draw();
 }
 
 void cleanup()

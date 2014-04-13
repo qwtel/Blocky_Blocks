@@ -98,5 +98,14 @@
     <None Include="controls.h" />
     <None Include="Shader\textureFragmentShader.frag" />
     <None Include="Shader\textureVertexShader.vert" />
+    <None Include="Shader\cameraVertexShader.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Texture\hazard.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Texture\wooden-crate.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

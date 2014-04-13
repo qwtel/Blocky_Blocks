@@ -114,9 +114,14 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="controls.h" />
+    <None Include="Shader\cameraVertexShader.vert" />
     <None Include="Shader\textureFragmentShader.frag" />
     <None Include="Shader\textureVertexShader.vert" />
     <None Include="Shader\vertexshader.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Texture\hazard.png" />
+    <Image Include="Texture\wooden-crate.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

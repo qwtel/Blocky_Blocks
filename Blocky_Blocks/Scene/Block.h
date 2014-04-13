@@ -15,14 +15,9 @@ public:
     virtual ~Block(void);
 
     virtual void update(double deltaT);
-    virtual void draw(mat4 vp);
+    virtual void draw();
 
 private:
-    GLuint vertexbuffer;
-    GLuint colorbuffer;
-
-    mat4 modelMatrix;
-    GLuint matrixID_;
-    float gDegreesRotated;
+    float _degreesRotated;
 };
 
