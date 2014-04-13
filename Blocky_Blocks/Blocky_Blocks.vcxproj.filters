@@ -51,6 +51,9 @@
     <ClCompile Include="Holder\Texture2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="External\Bitmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\Student.h">
@@ -81,6 +84,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Holder\Texture2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="External\Bitmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

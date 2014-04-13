@@ -83,6 +83,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="controls.cpp" />
+    <ClCompile Include="External\Bitmap.cpp" />
     <ClCompile Include="helpers.cpp" />
     <ClCompile Include="Holder\Holder.cpp" />
     <ClCompile Include="Holder\Program.cpp" />
@@ -96,6 +97,7 @@
     <ClCompile Include="Tutorial\Student.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="External\Bitmap.h" />
     <ClInclude Include="helpers.h" />
     <ClInclude Include="Holder\Holder.h" />
     <ClInclude Include="Holder\Program.h" />
