@@ -1,5 +1,6 @@
 #include "Camera.h"
 
+static const float MaxVerticalAngle = 85.0f; //must be less than 90 to avoid gimbal lock
 
 Camera::Camera(void) :
     _position(0.0f, 0.0f, 1.0f),
@@ -11,7 +12,6 @@ Camera::Camera(void) :
     _farPlane(10.0f)
 {
 }
-
 
 Camera::~Camera(void)
 {
@@ -64,4 +64,24 @@ void Camera::setViewportAspectRatio(float ratio)
 void Camera::offsetPosition(const vec3& offset)
 {
     _position += offset;
+}
+
+void Camera::offsetOrienatation(float upAngle, float rightAngle)
+{
+    _horizontalAngle += rightAngle;
+    _verticalAngle += upAngle;
+    normalizeAngles();
+}
+
+void Camera::normalizeAngles() {
+    _horizontalAngle = fmodf(_horizontalAngle, 360.0f);
+
+    //fmodf can return negative values, but this will make them all positive
+    if(_horizontalAngle < 0.0f)
+        _horizontalAngle += 360.0f;
+
+    if(_verticalAngle > MaxVerticalAngle)
+        _verticalAngle = MaxVerticalAngle;
+    else if(_verticalAngle < -MaxVerticalAngle)
+        _verticalAngle = -MaxVerticalAngle;
 }

@@ -15,9 +15,9 @@ Block::Block(Program& program)
     bmp.flipVertically();
     Texture2* texture = new Texture2(bmp);
 
+    glUniform1i(_program.uniform("tex"), 0); //set to 0 because the texture is bound to GL_TEXTURE0
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture->object());
-    glUniform1i(_program.uniform("tex"), 0); //set to 0 because the texture is bound to GL_TEXTURE0
 
     // make and bind the VAO
     glGenVertexArrays(1, &_vao);

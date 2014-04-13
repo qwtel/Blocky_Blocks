@@ -5,6 +5,7 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <GL/GLU.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -22,6 +23,7 @@ using namespace glm;
 #include "Scene/Block.h"
 
 const vec2 SCREEN_SIZE(800, 600);
+const vec2 CENTER = SCREEN_SIZE * 0.5f;
 
 GLFWwindow* window;
 
@@ -39,16 +41,18 @@ int main()
 {
     // (1) init everything you need
     window = openWindow(SCREEN_SIZE.x, SCREEN_SIZE.y);
-
     Shader vertexShader = Shader("Blocky_Blocks/Shader/cameraVertexShader.vert", GL_VERTEX_SHADER);
     Shader fragmentShader = Shader("Blocky_Blocks/Shader/textureFragmentshader.frag", GL_FRAGMENT_SHADER);
     program = new Program(vertexShader, fragmentShader);
+
+    // bind the program (the shaders)
+    glUseProgram(program->object());
 
     camera = Camera();
     camera.setPosition(vec3(0,0,4));
     camera.setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
 
-    t = new Triangle(*program);
+    //t = new Triangle(*program);
     b = new Block(*program);
 
     glEnable(GL_DEPTH_TEST);
@@ -81,9 +85,9 @@ int main()
         glfwSwapBuffers(window);
 
         // (7) check for errors
-        if (glGetError() != GL_NO_ERROR) 
-        {
-            fprintf(stderr, "GL ERROR DETECTED!!!\n"); 
+        GLenum errCode;
+        if ((errCode = glGetError()) != GL_NO_ERROR) {
+            fprintf(stderr, "OpenGL Error: %i\n", errCode);
         }
     }
 
@@ -101,32 +105,42 @@ void update(double deltaT)
     float deltaTf = float(deltaT);
 
     if(glfwGetKey(window, 'S')){
-        camera.offsetPosition(deltaTf * moveSpeed * -camera.forward());
+    camera.offsetPosition(deltaTf * moveSpeed * -camera.forward());
     } else if(glfwGetKey(window, 'W')){
-        camera.offsetPosition(deltaTf * moveSpeed * camera.forward());
+    camera.offsetPosition(deltaTf * moveSpeed * camera.forward());
     }
 
     if(glfwGetKey(window, 'A')){
-        camera.offsetPosition(deltaTf * moveSpeed * -camera.right());
+    camera.offsetPosition(deltaTf * moveSpeed * -camera.right());
     } else if(glfwGetKey(window, 'D')){
-        camera.offsetPosition(deltaTf * moveSpeed * camera.right());
+    camera.offsetPosition(deltaTf * moveSpeed * camera.right());
     }
 
     if(glfwGetKey(window, 'Z')){
-        camera.offsetPosition(deltaTf * moveSpeed * -vec3(0,1,0));
+    camera.offsetPosition(deltaTf * moveSpeed * -vec3(0,1,0));
     } else if(glfwGetKey(window, 'X')){
-        camera.offsetPosition(deltaTf * moveSpeed * vec3(0,1,0));
+    camera.offsetPosition(deltaTf * moveSpeed * vec3(0,1,0));
     }
+
+    //rotate camera based on mouse movement
+    const float mouseSensitivity = 0.1;
+
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+
+    float diffX = mouseX - CENTER.x;
+    float diffY = mouseY - CENTER.y;
+
+    camera.offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
+
+    glfwSetCursorPos(window, CENTER.x, CENTER.y); //reset the mouse, so it doesn't go out of the window
 
     b->update(deltaT);
 }
 
 void draw() 
 {
-    // bind the program (the shaders)
-    glUseProgram(program->object());
-
-    glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera.matrix()));
+    glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, value_ptr(camera.matrix()));
 
     // TODO: loop through scene graph?
 
@@ -137,14 +151,14 @@ void draw()
 
 
     b->draw();
-
-    glUseProgram(0);
 }
 
 void cleanup()
 {
+    glUseProgram(0);
+
     delete program;
-    delete t;
+    // delete t;
     delete b;
 
     // glDeleteVertexArrays(1, &vao);

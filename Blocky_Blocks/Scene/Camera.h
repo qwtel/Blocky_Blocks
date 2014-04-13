@@ -17,6 +17,8 @@ public:
     void setPosition(const vec3& position);
     void offsetPosition(const vec3& offset);
 
+    void offsetOrienatation(float upAngle, float rightAngle);
+
     void setViewportAspectRatio(float ratio);
 
     vec3 up() const;
@@ -31,5 +33,7 @@ private:
     float _viewportAspectRatio;
     float _nearPlane;
     float _farPlane;
+
+    void normalizeAngles();
     };
 
