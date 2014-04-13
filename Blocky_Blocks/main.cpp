@@ -17,12 +17,16 @@ using namespace glm;
 #include "Holder/Shader.h"
 #include "Holder/Program.h"
 
+#include "Scene/Camera.h"
 #include "Scene/Triangle.h"
 #include "Scene/Block.h"
 
 const vec2 SCREEN_SIZE(800, 600);
 
 GLFWwindow* window;
+
+Program* program;
+Camera camera;
 
 Triangle* t;
 Block* b;
@@ -38,19 +42,14 @@ int main()
 
     Shader vertexShader = Shader("Blocky_Blocks/Shader/cameraVertexShader.vert", GL_VERTEX_SHADER);
     Shader fragmentShader = Shader("Blocky_Blocks/Shader/textureFragmentshader.frag", GL_FRAGMENT_SHADER);
-    Program program = Program(vertexShader, fragmentShader);
+    program = new Program(vertexShader, fragmentShader);
 
-    // bind the program (the shaders)
-    glUseProgram(program.object());
+    camera = Camera();
+    camera.setPosition(vec3(0,0,4));
+    camera.setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
 
-    mat4 projection = perspective<float>(50.0, SCREEN_SIZE.x / SCREEN_SIZE.y, 0.1, 10.0);
-    glUniformMatrix4fv(program.uniform("projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
-    mat4 camera = lookAt(vec3(3,3,3), vec3(0,0,0), vec3(0,1,0));
-    glUniformMatrix4fv(program.uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera));
-
-    t = new Triangle(program);
-    b = new Block(program);
+    t = new Triangle(*program);
+    b = new Block(*program);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -96,12 +95,39 @@ int main()
 
 void update(double deltaT) 
 {
-    //computeMatricesFromInputs(window, float(deltaT));
+    //move position of camera based on WASD keys
+    const float moveSpeed = 2.0; //units per second
+
+    float deltaTf = float(deltaT);
+
+    if(glfwGetKey(window, 'S')){
+        camera.offsetPosition(deltaTf * moveSpeed * -camera.forward());
+    } else if(glfwGetKey(window, 'W')){
+        camera.offsetPosition(deltaTf * moveSpeed * camera.forward());
+    }
+
+    if(glfwGetKey(window, 'A')){
+        camera.offsetPosition(deltaTf * moveSpeed * -camera.right());
+    } else if(glfwGetKey(window, 'D')){
+        camera.offsetPosition(deltaTf * moveSpeed * camera.right());
+    }
+
+    if(glfwGetKey(window, 'Z')){
+        camera.offsetPosition(deltaTf * moveSpeed * -vec3(0,1,0));
+    } else if(glfwGetKey(window, 'X')){
+        camera.offsetPosition(deltaTf * moveSpeed * vec3(0,1,0));
+    }
+
     b->update(deltaT);
 }
 
 void draw() 
 {
+    // bind the program (the shaders)
+    glUseProgram(program->object());
+
+    glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera.matrix()));
+
     // TODO: loop through scene graph?
 
     //mat4 projectionMatrix = getProjectionMatrix();
@@ -109,13 +135,17 @@ void draw()
 
     // t->draw();
 
+
     b->draw();
+
+    glUseProgram(0);
 }
 
 void cleanup()
 {
+    delete program;
     delete t;
-    // delete b;
+    delete b;
 
     // glDeleteVertexArrays(1, &vao);
 }

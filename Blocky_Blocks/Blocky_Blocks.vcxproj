@@ -82,6 +82,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="controls.cpp" />
     <ClCompile Include="External\Bitmap.cpp" />
     <ClCompile Include="helpers.cpp" />
@@ -97,6 +98,7 @@
     <ClCompile Include="Tutorial\Student.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="External\Bitmap.h" />
     <ClInclude Include="helpers.h" />
     <ClInclude Include="Holder\Holder.h" />
