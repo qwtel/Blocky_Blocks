@@ -1,6 +1,6 @@
 #include "Program.h"
 
-Program::Program(Shader& vertexShader, Shader& fragmentShader) : 
+Program::Program(Shader* vertexShader, Shader* fragmentShader) : 
     Holder()
 {
     // Create program
@@ -14,8 +14,8 @@ Program::Program(Shader& vertexShader, Shader& fragmentShader) :
     }
 
     // Attach shader to program
-    glAttachShader(_object, vertexShader.object());
-    glAttachShader(_object, fragmentShader.object());
+    glAttachShader(_object, vertexShader->object());
+    glAttachShader(_object, fragmentShader->object());
 
     // Link programs
     glLinkProgram(_object);

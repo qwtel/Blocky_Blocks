@@ -9,7 +9,7 @@ Camera::Camera(void) :
     _fieldOfView(50.0f), 
     _viewportAspectRatio(4.0f/3.0f), 
     _nearPlane(0.1f), 
-    _farPlane(10.0f)
+    _farPlane(100.0f)
 {
 }
 

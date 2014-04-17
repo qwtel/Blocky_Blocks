@@ -82,40 +82,32 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Scene\Camera.cpp" />
-    <ClCompile Include="controls.cpp" />
     <ClCompile Include="External\Bitmap.cpp" />
-    <ClCompile Include="helpers.cpp" />
     <ClCompile Include="Holder\Holder.cpp" />
     <ClCompile Include="Holder\Program.cpp" />
-    <ClCompile Include="Scene\Block.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Scene\Triangle.cpp" />
     <ClCompile Include="Holder\Shader.cpp" />
     <ClCompile Include="Holder\Texture2.cpp" />
-    <ClCompile Include="Tutorial\Person.cpp" />
+    <ClCompile Include="Scene\Block.cpp" />
+    <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Scene\SceneObject.cpp" />
-    <ClCompile Include="Tutorial\Student.cpp" />
+    <ClCompile Include="Scene\Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="External\Bitmap.h" />
-    <ClInclude Include="helpers.h" />
     <ClInclude Include="Holder\Holder.h" />
     <ClInclude Include="Holder\Program.h" />
-    <ClInclude Include="Scene\Block.h" />
-    <ClInclude Include="Scene\Triangle.h" />
     <ClInclude Include="Holder\Shader.h" />
     <ClInclude Include="Holder\Texture2.h" />
-    <ClInclude Include="Tutorial\Person.h" />
+    <ClInclude Include="Scene\Block.h" />
+    <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="Scene\SceneObject.h" />
-    <ClInclude Include="Tutorial\Student.h" />
+    <ClInclude Include="Scene\Triangle.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Shader\fragmentshader.frag" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="controls.h" />
     <None Include="Shader\cameraVertexShader.vert" />
     <None Include="Shader\textureFragmentShader.frag" />
     <None Include="Shader\textureVertexShader.vert" />
