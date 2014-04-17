@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <list>
-	
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <GL/GLU.h>
@@ -37,11 +37,17 @@ struct ModelInstance {
     mat4 transform;
 };
 
+struct Light {
+    glm::vec3 position;
+    glm::vec3 intensities; //a.k.a. the color of the light
+};
+
 GLFWwindow* window;
 Camera camera;
 ModelAsset gWoodenCrate;
 std::list<ModelInstance> gInstances;
 GLfloat gDegreesRotated = 0.0f;
+Light gLight;
 
 GLFWwindow* openWindow(int width, int height);
 void Update(double deltaT);
@@ -74,6 +80,9 @@ int main()
 
     // create all the instances in the 3D scene based on the gWoodenCrate asset
     CreateInstances();
+
+    gLight.position = camera.position();
+    gLight.intensities = glm::vec3(1,1,1);
 
     while (running && !glfwWindowShouldClose(window))
     {
@@ -177,6 +186,8 @@ void DrawInstance(const ModelInstance& inst)
     //set the shader uniforms
     glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, value_ptr(camera.matrix()));
     glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, value_ptr(inst.transform));
+    glUniform3f(program->uniform("light.position"), gLight.position.x, gLight.position.y, gLight.position.z);
+    glUniform3f(program->uniform("light.intensities"), gLight.intensities.r, gLight.intensities.g, gLight.intensities.b);
     glUniform1i(program->uniform("tex"), 0);
 
     //bind the texture
@@ -206,7 +217,7 @@ GLFWwindow* openWindow(int width, int height)
         system("PAUSE");
         exit(-1);
     }
-	
+
 
     // (2) set window hints
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -274,72 +285,78 @@ static void LoadWoodenCrateAsset()
     // TODO: Load vertexData from file
     // Make a cube out of triangles (two triangles per side)
     GLfloat vertexData[] = {
-        //  X     Y     Z       U     V
+        //  X     Y     Z       U     V          Normal
         // bottom
-        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,
-         1.0f,-1.0f,-1.0f,   1.0f, 0.0f,
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,
-         1.0f,-1.0f,-1.0f,   1.0f, 0.0f,
-         1.0f,-1.0f, 1.0f,   1.0f, 1.0f,
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,
+        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
 
         // top
-        -1.0f, 1.0f,-1.0f,   0.0f, 0.0f,
-        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
-         1.0f, 1.0f,-1.0f,   1.0f, 0.0f,
-         1.0f, 1.0f,-1.0f,   1.0f, 0.0f,
-        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
-         1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+        -1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
 
         // front
-        -1.0f,-1.0f, 1.0f,   1.0f, 0.0f,
-         1.0f,-1.0f, 1.0f,   0.0f, 0.0f,
-        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
-         1.0f,-1.0f, 1.0f,   0.0f, 0.0f,
-         1.0f, 1.0f, 1.0f,   0.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+        -1.0f,-1.0f, 1.0f,   1.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+        1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+        1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
 
         // back
-        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,
-        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,
-         1.0f,-1.0f,-1.0f,   1.0f, 0.0f,
-         1.0f,-1.0f,-1.0f,   1.0f, 0.0f,
-        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,
-         1.0f, 1.0f,-1.0f,   1.0f, 1.0f,
+        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+        1.0f, 1.0f,-1.0f,   1.0f, 1.0f,   0.0f, 0.0f, -1.0f,
 
         // left
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,
-        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,
-        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,
-        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
 
         // right
-         1.0f,-1.0f, 1.0f,   1.0f, 1.0f,
-         1.0f,-1.0f,-1.0f,   1.0f, 0.0f,
-         1.0f, 1.0f,-1.0f,   0.0f, 0.0f,
-         1.0f,-1.0f, 1.0f,   1.0f, 1.0f,
-         1.0f, 1.0f,-1.0f,   0.0f, 0.0f,
-         1.0f, 1.0f, 1.0f,   0.0f, 1.0f
+        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f
     };
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
 
     // connect the xyz to the "vert" attribute of the vertex shader
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vert"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), NULL);
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), NULL);
 
     // connect the uv coords to the "vertTexCoord" attribute of the vertex shader
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertTexCoord"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_TRUE,  5*sizeof(GLfloat), (const GLvoid*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_TRUE,  8*sizeof(GLfloat), (const GLvoid*)(3 * sizeof(GLfloat)));
+
+    // connect the normal to the "vertNormal" attribute of the vertex shader
+    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertNormal"));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_TRUE,  8*sizeof(GLfloat), (const GLvoid*)(5 * sizeof(GLfloat)));
+
+
 
     // unbind the VAO
     glBindVertexArray(0);
 }
 
 static Program* LoadShaders() {
-    Shader* vertexShader = new Shader("Blocky_Blocks/Shader/cameraVertexShader.vert", GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader("Blocky_Blocks/Shader/textureFragmentshader.frag", GL_FRAGMENT_SHADER);
+    Shader* vertexShader = new Shader("Blocky_Blocks/Shader/lightingVertexShader.vert", GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader("Blocky_Blocks/Shader/lightingFragmentshader.frag", GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 

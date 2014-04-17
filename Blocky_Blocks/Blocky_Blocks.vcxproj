@@ -88,10 +88,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Holder\Shader.cpp" />
     <ClCompile Include="Holder\Texture2.cpp" />
-    <ClCompile Include="Scene\Block.cpp" />
     <ClCompile Include="Scene\Camera.cpp" />
-    <ClCompile Include="Scene\SceneObject.cpp" />
-    <ClCompile Include="Scene\Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="External\Bitmap.h" />
@@ -99,16 +96,15 @@
     <ClInclude Include="Holder\Program.h" />
     <ClInclude Include="Holder\Shader.h" />
     <ClInclude Include="Holder\Texture2.h" />
-    <ClInclude Include="Scene\Block.h" />
     <ClInclude Include="Scene\Camera.h" />
-    <ClInclude Include="Scene\SceneObject.h" />
-    <ClInclude Include="Scene\Triangle.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Shader\fragmentshader.frag" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\cameraVertexShader.vert" />
+    <None Include="Shader\lightingFragmentShader.frag" />
+    <None Include="Shader\lightingVertexShader.vert" />
     <None Include="Shader\textureFragmentShader.frag" />
     <None Include="Shader\textureVertexShader.vert" />
     <None Include="Shader\vertexshader.vert" />
