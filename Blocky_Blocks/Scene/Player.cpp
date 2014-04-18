@@ -1,5 +1,19 @@
 #include "Player.h"
 
+static const vec3 XAxis = vec3(1,0,0);
+static const vec3 YAxis = vec3(0,1,0);
+static const vec3 ZAxis = vec3(0,0,1);
+
+static const vec3 Forward = ZAxis;
+static const vec3 ForwardRotate = XAxis;
+static const vec3 Backward = -Forward;
+static const vec3 BackwardRotate = -ForwardRotate;
+
+static const vec3 Left = XAxis;
+static const vec3 LeftRotate = -ZAxis;
+static const vec3 Right = -Left;
+static const vec3 RightRotate = -LeftRotate;
+
 Player::Player(ModelAsset* ma) :
     _position(vec3()),
     _rotateAngle(0.0f),
@@ -60,26 +74,26 @@ void Player::_move(float time, vec3 direction, vec3 rotateDirection)
 
 void Player::moveLeft(float time, float deltaT)
 {
-    // TODO: make dependent on camera
-    _move(time, vec3(1, 0, 0), vec3(0, 0, -1));
+    vec3 direction = rotate(Left, _lookAngle, YAxis);
+    _move(time, direction, LeftRotate);
 }
 
 void Player::moveRight(float time, float deltaT)
 {
-    // TODO: make dependent on camera
-    _move(time, vec3(-1, 0, 0), vec3(0, 0, 1));
+    vec3 direction = rotate(Right, _lookAngle, YAxis);
+    _move(time, direction, RightRotate);
 }
 
 void Player::moveForward(float time, float deltaT)
 {
-    // TODO: make dependent on camera
-    _move(time, vec3(0, 0, 1), vec3(1, 0, 0));
+    vec3 direction = rotate(Forward, _lookAngle, YAxis);
+    _move(time, direction, ForwardRotate);
 }
 
 void Player::moveBackward(float time, float deltaT)
 {
-    // TODO: make dependent on camera
-    _move(time, vec3(0, 0, -1), vec3(-1, 0, 0));
+    vec3 direction = rotate(Backward, _lookAngle, YAxis);
+    _move(time, direction, BackwardRotate);
 }
 
 void Player::jump(float time, float deltaT)
@@ -102,6 +116,6 @@ float Player::getLookAngle()
 /*
 void Player::setCamera(Camera* camera)
 {
-    _camera = camera;
+_camera = camera;
 }
 */

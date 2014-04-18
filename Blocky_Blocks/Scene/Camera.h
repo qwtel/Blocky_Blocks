@@ -19,7 +19,6 @@ public:
     const vec3 position() const;
 
     void offsetOrienatation(float upAngle, float rightAngle);
-    void offsetPosition(vec3 offset);
 
     void setViewportAspectRatio(float ratio);
 
@@ -29,14 +28,12 @@ public:
 
 private:
     Player* _target;
-    vec3 _position;
-    float _horizontalAngle;
-    float _verticalAngle;
+    vec3 _distance;
     float _fieldOfView;
     float _viewportAspectRatio;
     float _nearPlane;
     float _farPlane;
 
     void normalizeAngles();
-    };
+};
 
