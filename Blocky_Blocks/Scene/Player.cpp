@@ -14,12 +14,15 @@ static const vec3 LeftRotate = -ZAxis;
 static const vec3 Right = -Left;
 static const vec3 RightRotate = -LeftRotate;
 
+static const float MaxVerticalAngle = 85.0f;
+
 Player::Player(ModelAsset* ma) :
     _position(vec3()),
-    _rotateAngle(0.0f),
-    _lookAngle(0.0f),
+    _horizontalAngle(0.0f),
+    _verticalAngle(0.0f),
     _rotateDirection(),
-    _isRotating(false)
+    _isRotating(false),
+    _isJumping(false)
 {
     asset = ma;
     transform = mat4();
@@ -37,27 +40,49 @@ vec3 Player::position()
 void Player::_offsetPosition(vec3 offset)
 {
     _position += offset;
-    //_camera->offsetPosition(offset);
 }
 
 void Player::update(float time, float deltaT)
 {
-    static const float moveSpeed = 8.0; //units per second
-    static const double moveDuration = 0.25; //duration of animation
+    static const float MoveSpeed = 8.0; //units per second
+    static const float MoveDuration = 0.25; //duration of animation
+
+    static const float JumpDuration = 0.5; //duration of animation
+    static const float JumpHeight = 3.0f;
 
     // this is not good
     transform = glm::translate(mat4(), _position);
-    transform = glm::rotate(transform, _lookAngle, vec3(0, 1, 0));
+    transform = glm::rotate(transform, _horizontalAngle, vec3(0, 1, 0));
 
     if (_isRotating) {
-        if (_rotateStart + moveDuration < time) {
+        if (_rotateStart + MoveDuration < time && !_isJumping) { // can't stop while jumping
             _isRotating = false;
         } else {
-            _rotateAngle = 90.0f * ((time - _rotateStart) / moveDuration);
-            _offsetPosition(moveSpeed * deltaT * _moveDirection);
+            _offsetPosition(MoveSpeed * deltaT * _moveDirection);
 
-            // this is not good
-            transform = glm::rotate(transform, _rotateAngle, _rotateDirection);
+            float x = (time - _rotateStart) / MoveDuration;
+            float rotateAngle = 90.0f * x;
+            transform = glm::rotate(transform, rotateAngle, _rotateDirection);
+        }
+    }
+
+    if (_isJumping) {
+        if (_jumpStart + JumpDuration < time) {
+            _isJumping = false;
+            _isRotating = false;
+            _position.y = _jumpStartHeight; // XXX
+        } else {
+            float x = (time - _jumpStart) / JumpDuration;
+
+            // change from 0..1 to -1..1, see below
+            x = (x*2) - 1;
+
+            // simpe "jump" function, see: https://www.wolframalpha.com/input/?i=-%28x%5E2%29+%2B+1%29
+            float height = -(x*x) + 1;
+
+            //printf("f(%f) = %f\n", x, height);
+
+            _position.y = _jumpStartHeight + height * JumpHeight;
         }
     }
 }
@@ -74,48 +99,50 @@ void Player::_move(float time, vec3 direction, vec3 rotateDirection)
 
 void Player::moveLeft(float time, float deltaT)
 {
-    vec3 direction = rotate(Left, _lookAngle, YAxis);
+    vec3 direction = rotate(Left, _horizontalAngle, YAxis);
     _move(time, direction, LeftRotate);
 }
 
 void Player::moveRight(float time, float deltaT)
 {
-    vec3 direction = rotate(Right, _lookAngle, YAxis);
+    vec3 direction = rotate(Right, _horizontalAngle, YAxis);
     _move(time, direction, RightRotate);
 }
 
 void Player::moveForward(float time, float deltaT)
 {
-    vec3 direction = rotate(Forward, _lookAngle, YAxis);
+    vec3 direction = rotate(Forward, _horizontalAngle, YAxis);
     _move(time, direction, ForwardRotate);
 }
 
 void Player::moveBackward(float time, float deltaT)
 {
-    vec3 direction = rotate(Backward, _lookAngle, YAxis);
+    vec3 direction = rotate(Backward, _horizontalAngle, YAxis);
     _move(time, direction, BackwardRotate);
 }
 
 void Player::jump(float time, float deltaT)
 {
-    // TODO
+    if (!_isJumping) {
+        _isJumping = true;
+        _jumpStart = time;
+        _jumpStartHeight = _position.y;
+    }
 }
 
-void Player::offsetLookAngle(float lookAngle)
+void Player::offsetLookAngle(float upAngle, float rightAngle)
 {
-    _lookAngle += lookAngle;
-    if(_lookAngle < 0.0f)
-        _lookAngle += 360.0f;
-}
+    _verticalAngle -= upAngle;
+    _horizontalAngle -= rightAngle;
 
-float Player::getLookAngle()
-{
-    return _lookAngle;
-}
+    _horizontalAngle = fmodf(_horizontalAngle, 360.0f);
 
-/*
-void Player::setCamera(Camera* camera)
-{
-_camera = camera;
+    //fmodf can return negative values, but this will make them all positive
+    if(_horizontalAngle < 0.0f)
+        _horizontalAngle += 360.0f;
+
+    if(_verticalAngle > MaxVerticalAngle)
+        _verticalAngle = MaxVerticalAngle;
+    else if(_verticalAngle < -MaxVerticalAngle)
+        _verticalAngle = -MaxVerticalAngle;
 }
-*/

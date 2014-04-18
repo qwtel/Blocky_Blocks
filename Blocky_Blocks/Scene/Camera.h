@@ -33,7 +33,5 @@ private:
     float _viewportAspectRatio;
     float _nearPlane;
     float _farPlane;
-
-    void normalizeAngles();
 };
 

@@ -1,7 +1,6 @@
 #include "Camera.h"
 
-static const float MaxVerticalAngle = 85.0f;
-vec3 Distance = vec3(0, 5, -10);
+vec3 Distance = vec3(0, 4, -10);
 
 Camera::Camera(Player* player) :
     _target(player),
@@ -59,29 +58,9 @@ void Camera::setViewportAspectRatio(float ratio)
 
 void Camera::offsetOrienatation(float upAngle, float rightAngle)
 {
-    //_horizontalAngle += rightAngle;
-    //_verticalAngle += upAngle;
-
-    _target->offsetLookAngle(-rightAngle);
+    _target->offsetLookAngle(upAngle, rightAngle);
 
     // YAY
-    _distance = glm::rotate(_distance, -rightAngle, vec3(0,1,0));
-    //_distance = glm::rotate(_distance, upAngle, vec3(1,0,0));
-
-    normalizeAngles();
-}
-
-void Camera::normalizeAngles() {
-    /*
-    _horizontalAngle = fmodf(_horizontalAngle, 360.0f);
-
-    //fmodf can return negative values, but this will make them all positive
-    if(_horizontalAngle < 0.0f)
-        _horizontalAngle += 360.0f;
-
-    if(_verticalAngle > MaxVerticalAngle)
-        _verticalAngle = MaxVerticalAngle;
-    else if(_verticalAngle < -MaxVerticalAngle)
-        _verticalAngle = -MaxVerticalAngle;
-	*/
+    _distance = glm::rotate(Distance, _target->_horizontalAngle, vec3(0,1,0));
+    //_distance = glm::rotate(_distance, _target->_verticalAngle, vec3(1,0,0));
 }

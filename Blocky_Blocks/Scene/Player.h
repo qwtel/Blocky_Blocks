@@ -22,24 +22,23 @@ public:
 
     void update(float time, float deltaT);
     
-    void offsetLookAngle(float lookAngle);
-    float getLookAngle();
-
-    //void setCamera(Camera* camera);
-
+    void offsetLookAngle(float upAngle, float rightAngle);
+    float _horizontalAngle;
+    float _verticalAngle;
 private:
-    //Camera* _camera;
     vec3 _position;
-    float _lookAngle;
     void _offsetPosition(vec3 offset);
 
     void _move(float time, vec3 direction, vec3 rotateDirection);
 
-    float _rotateAngle;
     bool _isRotating;
     vec3 _moveDirection;
     vec3 _rotateDirection;
     float _rotateStart;
+
+    bool _isJumping;
+    float _jumpStart;
+    float _jumpStartHeight;
 
 };
 

@@ -128,6 +128,10 @@ void Update(double time, double deltaT)
 	player->moveRight(timef, deltaTf);
     }
 
+    if(glfwGetKey(window, GLFW_KEY_SPACE)) {
+	player->jump(timef, deltaTf);
+    }
+
     player->update(timef, deltaTf);
 
     /*
