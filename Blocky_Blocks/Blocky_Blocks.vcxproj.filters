@@ -36,6 +36,12 @@
     <ClCompile Include="Scene\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Player.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Source.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Holder\Holder.h">
@@ -56,6 +62,9 @@
     <ClInclude Include="Scene\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Scene\Player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Shader\fragmentshader.frag" />
@@ -73,6 +82,9 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="Texture\wooden-crate.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Texture\block.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

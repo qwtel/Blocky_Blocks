@@ -88,7 +88,9 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Holder\Shader.cpp" />
     <ClCompile Include="Holder\Texture2.cpp" />
+    <ClCompile Include="Scene\Player.cpp" />
     <ClCompile Include="Scene\Camera.cpp" />
+    <ClCompile Include="Scene\Source.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="External\Bitmap.h" />
@@ -96,6 +98,7 @@
     <ClInclude Include="Holder\Program.h" />
     <ClInclude Include="Holder\Shader.h" />
     <ClInclude Include="Holder\Texture2.h" />
+    <ClInclude Include="Scene\Player.h" />
     <ClInclude Include="Scene\Camera.h" />
   </ItemGroup>
   <ItemGroup>
@@ -110,6 +113,7 @@
     <None Include="Shader\vertexshader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Texture\block.png" />
     <Image Include="Texture\hazard.png" />
     <Image Include="Texture\wooden-crate.jpg" />
   </ItemGroup>

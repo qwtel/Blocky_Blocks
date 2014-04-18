@@ -6,7 +6,6 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <GL/GLU.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -18,39 +17,24 @@ using namespace glm;
 #include "Holder/Program.h"
 #include "Holder/Texture2.h"
 #include "Scene/Camera.h"
+#include "Scene\Player.h"
+
+#include "Scene/Source.cpp"
 
 const vec2 SCREEN_SIZE(800, 600);
 const vec2 CENTER = SCREEN_SIZE * 0.5f;
 
-struct ModelAsset {
-    Program* program;
-    Texture2* texture;
-    GLuint vbo;
-    GLuint vao;
-    GLenum drawType;
-    GLint drawStart;
-    GLint drawCount;
-};
-
-struct ModelInstance {
-    ModelAsset* asset;
-    mat4 transform;
-};
-
-struct Light {
-    glm::vec3 position;
-    glm::vec3 intensities; //a.k.a. the color of the light
-};
-
 GLFWwindow* window;
-Camera camera;
+Camera* camera;
+
 ModelAsset gWoodenCrate;
 std::list<ModelInstance> gInstances;
-GLfloat gDegreesRotated = 0.0f;
+//GLfloat gDegreesRotated = 0.0f;
 Light gLight;
+Player* player;
 
 GLFWwindow* openWindow(int width, int height);
-void Update(double deltaT);
+void Update(double time, double deltaT);
 void Draw();
 void DrawInstance(const ModelInstance& inst);
 void cleanup();
@@ -65,10 +49,6 @@ int main()
     // (1) init everything you need
     window = openWindow(SCREEN_SIZE.x, SCREEN_SIZE.y);
 
-    camera = Camera();
-    camera.setPosition(vec3(0,0,4));
-    camera.setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
-
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
@@ -81,7 +61,14 @@ int main()
     // create all the instances in the 3D scene based on the gWoodenCrate asset
     CreateInstances();
 
-    gLight.position = camera.position();
+    player = new Player(&gWoodenCrate);
+    camera = new Camera(player);
+    //player->setCamera(camera);
+
+    //camera->setPosition(vec3(0,0,4));
+    camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
+
+    gLight.position = camera->position();
     gLight.intensities = glm::vec3(1,1,1);
 
     while (running && !glfwWindowShouldClose(window))
@@ -100,7 +87,7 @@ int main()
         running = !glfwGetKey(window, GLFW_KEY_ESCAPE);
 
         // (5) Update all game components
-        Update(deltaT);
+        Update(time, deltaT);
 
         // (6) draw all game components
         Draw();
@@ -121,30 +108,35 @@ int main()
     glfwTerminate();
 }
 
-void Update(double deltaT) 
+void Update(double time, double deltaT) 
 {
     //move position of camera based on WASD keys
     const float moveSpeed = 4.0; //units per second
 
     float deltaTf = float(deltaT);
+    float timef = float(time);
 
     if(glfwGetKey(window, 'S')){
-        camera.offsetPosition(deltaTf * moveSpeed * -camera.forward());
+        player->moveBackward(timef, deltaTf);
     } else if(glfwGetKey(window, 'W')){
-        camera.offsetPosition(deltaTf * moveSpeed * camera.forward());
+	player->moveForward(timef, deltaTf);
     }
 
     if(glfwGetKey(window, 'A')){
-        camera.offsetPosition(deltaTf * moveSpeed * -camera.right());
+	player->moveLeft(timef, deltaTf);
     } else if(glfwGetKey(window, 'D')){
-        camera.offsetPosition(deltaTf * moveSpeed * camera.right());
+	player->moveRight(timef, deltaTf);
     }
 
+    player->update(timef, deltaTf);
+
+    /*
     if(glfwGetKey(window, 'Z')){
         camera.offsetPosition(deltaTf * moveSpeed * -vec3(0,1,0));
     } else if(glfwGetKey(window, 'X')){
         camera.offsetPosition(deltaTf * moveSpeed * vec3(0,1,0));
     }
+    */
 
     //rotate camera based on mouse movement
     const float mouseSensitivity = 0.1;
@@ -155,21 +147,23 @@ void Update(double deltaT)
     float diffX = mouseX - CENTER.x;
     float diffY = mouseY - CENTER.y;
 
-    camera.offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
+    camera->offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
 
     glfwSetCursorPos(window, CENTER.x, CENTER.y); //reset the mouse, so it doesn't go out of the window
 
     //rotate the first instance in `gInstances`
     const GLfloat degreesPerSecond = 180.0f;
-    gDegreesRotated += deltaT * degreesPerSecond;
-    while(gDegreesRotated > 360.0f) gDegreesRotated -= 360.0f;
+    //gDegreesRotated += deltaT * degreesPerSecond;
+    //while(gDegreesRotated > 360.0f) gDegreesRotated -= 360.0f;
 
     // meh..
-    gInstances.front().transform = rotate(mat4(), gDegreesRotated, vec3(0,1,0));
+    //gInstances.front().transform = rotate(mat4(), gDegreesRotated, vec3(0,1,0));
 }
 
 void Draw() 
 {
+    DrawInstance(*player);
+
     std::list<ModelInstance>::const_iterator it;
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
         DrawInstance(*it);
@@ -185,7 +179,7 @@ void DrawInstance(const ModelInstance& inst)
     glUseProgram(program->object());
 
     //set the shader uniforms
-    glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, value_ptr(camera.matrix()));
+    glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, value_ptr(camera->matrix()));
     glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, value_ptr(inst.transform));
     glUniform3f(program->uniform("light.position"), gLight.position.x, gLight.position.y, gLight.position.z);
     glUniform3f(program->uniform("light.intensities"), gLight.intensities.r, gLight.intensities.g, gLight.intensities.b);
@@ -349,8 +343,6 @@ static void LoadWoodenCrateAsset()
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertNormal"));
     glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_TRUE,  8*sizeof(GLfloat), (const GLvoid*)(5 * sizeof(GLfloat)));
 
-
-
     // unbind the VAO
     glBindVertexArray(0);
 }
@@ -362,11 +354,6 @@ static Program* LoadShaders() {
 }
 
 static void CreateInstances() {
-    ModelInstance dot;
-    dot.asset = &gWoodenCrate;
-    dot.transform = mat4();
-    gInstances.push_back(dot);
-
     ModelInstance i;
     i.asset = &gWoodenCrate;
     i.transform = translate(mat4(), vec3(0,-4,0)) * scale(mat4(), vec3(1,2,1));

@@ -1,9 +1,10 @@
 #include "Camera.h"
 
-static const float MaxVerticalAngle = 85.0f; //must be less than 90 to avoid gimbal lock
+static const float MaxVerticalAngle = 85.0f;
+static const vec3 Distance = vec3(0, 5, -10);
 
-Camera::Camera(void) :
-    _position(0.0f, 0.0f, 1.0f),
+Camera::Camera(Player* player) :
+    _target(player),
     _horizontalAngle(0.0f),
     _verticalAngle(0.0f),
     _fieldOfView(50.0f), 
@@ -11,6 +12,7 @@ Camera::Camera(void) :
     _nearPlane(0.1f), 
     _farPlane(100.0f)
 {
+    _position = _target->position() + Distance;
 }
 
 Camera::~Camera(void)
@@ -18,10 +20,18 @@ Camera::~Camera(void)
 }
 
 mat4 Camera::matrix() const {
-    mat4 camera = perspective(_fieldOfView, _viewportAspectRatio, _nearPlane, _farPlane);
-    camera *= orientation();
-    camera = translate(camera, -_position);
-    return camera;
+    mat4 projection = perspective(_fieldOfView, _viewportAspectRatio, _nearPlane, _farPlane);
+    //camera *= orientation();
+
+    /*
+    float desiredAngle = target.transform.eulerAngles.y;
+    Quaternion rotation = Quaternion.Euler(0, desiredAngle, 0);
+    transform.position = target.transform.position - (rotation * offset);
+    transform.LookAt(target.transform);
+    */
+
+    mat4 view = glm::lookAt(position(), _target->position(), vec3(0,1,0));
+    return projection * view;
 }
 
 mat4 Camera::orientation() const {
@@ -31,8 +41,9 @@ mat4 Camera::orientation() const {
     return orientation;
 }
 
-const vec3& Camera::position() const
+const vec3 Camera::position() const
 {
+    //return glm::rotate(_target->position(), _target->getLookAngle(), vec3(0,1,0)) + Distance;
     return _position;
 }
 
@@ -51,25 +62,21 @@ vec3 Camera::right() const {
     return vec3(up);
 }
 
-void Camera::setPosition(const vec3& position)
-{
-    _position = position;
-}
-
 void Camera::setViewportAspectRatio(float ratio)
 {
     _viewportAspectRatio = ratio;
-}
-
-void Camera::offsetPosition(const vec3& offset)
-{
-    _position += offset;
 }
 
 void Camera::offsetOrienatation(float upAngle, float rightAngle)
 {
     _horizontalAngle += rightAngle;
     _verticalAngle += upAngle;
+    _target->offsetLookAngle(-rightAngle);
+
+    vec3 rotatePoint = _position - _target->position();
+    vec3 tmp = glm::rotate(rotatePoint, -rightAngle, vec3(0,1,0));
+    _position = tmp + _target->position();
+
     normalizeAngles();
 }
 
@@ -84,4 +91,9 @@ void Camera::normalizeAngles() {
         _verticalAngle = MaxVerticalAngle;
     else if(_verticalAngle < -MaxVerticalAngle)
         _verticalAngle = -MaxVerticalAngle;
+}
+
+void Camera::offsetPosition(vec3 offset)
+{
+    _position += offset;
 }

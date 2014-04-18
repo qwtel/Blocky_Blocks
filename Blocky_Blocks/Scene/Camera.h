@@ -2,22 +2,24 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 using namespace glm;
+
+#include "Player.h"
 
 class Camera
 {
 public:
-    Camera(void);
+    Camera(Player* player);
     ~Camera(void);
 
     mat4 matrix() const;
     mat4 orientation() const;
 
-    const vec3& position() const;
-    void setPosition(const vec3& position);
-    void offsetPosition(const vec3& offset);
+    const vec3 position() const;
 
     void offsetOrienatation(float upAngle, float rightAngle);
+    void offsetPosition(vec3 offset);
 
     void setViewportAspectRatio(float ratio);
 
@@ -26,6 +28,7 @@ public:
     vec3 right() const;
 
 private:
+    Player* _target;
     vec3 _position;
     float _horizontalAngle;
     float _verticalAngle;
