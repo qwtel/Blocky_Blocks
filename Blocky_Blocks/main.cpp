@@ -87,6 +87,7 @@ int main()
     while (running && !glfwWindowShouldClose(window))
     {
         // (2) clear the frame and depth buffer
+	glClearColor(1, 1, 1, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // (3) compute the frame time delta
@@ -261,7 +262,7 @@ GLFWwindow* openWindow(int width, int height)
 
 static Texture2* LoadTexture()
 {
-    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Blocky_Blocks/Texture/wooden-crate.jpg");
+    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Blocky_Blocks/Texture/block.png");
     bmp.flipVertically();
     return new Texture2(bmp);
 }

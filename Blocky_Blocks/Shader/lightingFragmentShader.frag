@@ -20,13 +20,13 @@ void main() {
 
 	vec3 fragPosition = vec3(model * vec4(fragVert, 1));
 
-	vec3 surfaceToLight = light.position - fragPosition;
+	vec3 surfaceToLight = normalize(light.position - fragPosition);
 
-	float brightness = dot(normal, surfaceToLight) / (length(surfaceToLight) * length(normal));
-	brightness = clamp(brightness, 0, 1);
+	float brightness = dot(normal, surfaceToLight);
+	brightness = max(brightness, 0);
 
-	//float ambient = 0.1;
-	//brightness = brightness + ambient;
+	float ambient = 0.75;
+	brightness = brightness + ambient;
 
 	finalColor = brightness * vec4(light.intensities, 1) * texture(tex, fragTexCoord);
 }
