@@ -11,7 +11,7 @@ class Texture2 : public Holder
 public:
     Texture2(tdogl::Bitmap bmp, 
         GLint minMagFiler = GL_LINEAR,
-        GLint wrapMode = GL_CLAMP_TO_EDGE);
+        GLint wrapMode = GL_REPEAT);
     virtual ~Texture2(void);
 
     GLfloat originalWidth() const;

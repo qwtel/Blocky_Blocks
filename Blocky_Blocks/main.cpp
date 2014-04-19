@@ -74,7 +74,7 @@ int main()
     while (running && !glfwWindowShouldClose(window))
     {
         // (2) clear the frame and depth buffer
-	glClearColor(1, 1, 1, 1);
+        glClearColor(0.5f, 0.5f, 1, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // (3) compute the frame time delta
@@ -119,28 +119,20 @@ void Update(double time, double deltaT)
     if(glfwGetKey(window, 'S')){
         player->moveBackward(timef, deltaTf);
     } else if(glfwGetKey(window, 'W')){
-	player->moveForward(timef, deltaTf);
+        player->moveForward(timef, deltaTf);
     }
 
     if(glfwGetKey(window, 'A')){
-	player->moveLeft(timef, deltaTf);
+        player->moveLeft(timef, deltaTf);
     } else if(glfwGetKey(window, 'D')){
-	player->moveRight(timef, deltaTf);
+        player->moveRight(timef, deltaTf);
     }
 
     if(glfwGetKey(window, GLFW_KEY_SPACE)) {
-	player->jump(timef, deltaTf);
+        player->jump(timef, deltaTf);
     }
 
     player->update(timef, deltaTf);
-
-    /*
-    if(glfwGetKey(window, 'Z')){
-        camera.offsetPosition(deltaTf * moveSpeed * -vec3(0,1,0));
-    } else if(glfwGetKey(window, 'X')){
-        camera.offsetPosition(deltaTf * moveSpeed * vec3(0,1,0));
-    }
-    */
 
     //rotate camera based on mouse movement
     const float mouseSensitivity = 0.1;
@@ -154,18 +146,13 @@ void Update(double time, double deltaT)
     camera->offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
 
     glfwSetCursorPos(window, CENTER.x, CENTER.y); //reset the mouse, so it doesn't go out of the window
-
-    //rotate the first instance in `gInstances`
-    const GLfloat degreesPerSecond = 180.0f;
-    //gDegreesRotated += deltaT * degreesPerSecond;
-    //while(gDegreesRotated > 360.0f) gDegreesRotated -= 360.0f;
-
-    // meh..
-    //gInstances.front().transform = rotate(mat4(), gDegreesRotated, vec3(0,1,0));
 }
 
 void Draw() 
 {
+    // one shader to rule them all...
+    glUseProgram(player->asset->program->object());
+
     DrawInstance(*player);
 
     std::list<ModelInstance>::const_iterator it;
@@ -180,7 +167,7 @@ void DrawInstance(const ModelInstance& inst)
     Program* program = asset->program;
 
     //bind the shaders
-    glUseProgram(program->object());
+    //glUseProgram(program->object());
 
     //set the shader uniforms
     glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, value_ptr(camera->matrix()));
@@ -200,7 +187,8 @@ void DrawInstance(const ModelInstance& inst)
     //unbind everything
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
-    glUseProgram(0);
+
+    //glUseProgram(0);
 }
 
 void cleanup()
@@ -222,6 +210,7 @@ GLFWwindow* openWindow(int width, int height)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 2);
 
     // (3) open window
     GLFWwindow* window = glfwCreateWindow(width, height, "Hello, CGUE!", nullptr, nullptr);

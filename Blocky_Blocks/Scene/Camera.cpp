@@ -18,7 +18,8 @@ Camera::~Camera(void)
 
 mat4 Camera::matrix() const {
     mat4 projection = perspective(_fieldOfView, _viewportAspectRatio, _nearPlane, _farPlane);
-    mat4 view = glm::lookAt(position(), _target->position(), vec3(0,1,0));
+    vec3 center = _target->position() + vec3(0,2,0); // look a bit above the target
+    mat4 view = glm::lookAt(position(), center, vec3(0,1,0));
     return projection * view;
 }
 
@@ -61,6 +62,6 @@ void Camera::offsetOrienatation(float upAngle, float rightAngle)
     _target->offsetLookAngle(upAngle, rightAngle);
 
     // YAY
-    _distance = glm::rotate(Distance, _target->_horizontalAngle, vec3(0,1,0));
-    //_distance = glm::rotate(_distance, _target->_verticalAngle, vec3(1,0,0));
+    _distance = glm::rotate(Distance, _target->_verticalAngle, vec3(1,0,0));
+    _distance = glm::rotate(_distance, _target->_horizontalAngle, vec3(0,1,0));
 }

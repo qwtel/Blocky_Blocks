@@ -61,6 +61,10 @@ void Player::update(float time, float deltaT)
             _offsetPosition(MoveSpeed * deltaT * _moveDirection);
 
             float x = (time - _rotateStart) / MoveDuration;
+
+            // ease-in-out function, see: https://www.wolframalpha.com/input/?i=x%5E2%2F%28x%5E2+%2B+%281-x%29%5E2%29+from+0+to+1
+	    //x = pow(x, 2) / (pow(x, 2) + pow((1-x), 2));
+
             float rotateAngle = 90.0f * x;
             transform = glm::rotate(transform, rotateAngle, _rotateDirection);
         }
@@ -132,7 +136,7 @@ void Player::jump(float time, float deltaT)
 
 void Player::offsetLookAngle(float upAngle, float rightAngle)
 {
-    _verticalAngle -= upAngle;
+    _verticalAngle += upAngle;
     _horizontalAngle -= rightAngle;
 
     _horizontalAngle = fmodf(_horizontalAngle, 360.0f);

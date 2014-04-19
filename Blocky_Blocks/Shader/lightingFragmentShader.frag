@@ -25,7 +25,7 @@ void main() {
 	float brightness = dot(normal, surfaceToLight);
 	brightness = max(brightness, 0);
 
-	float ambient = 0.75;
+	float ambient = 0.8;
 	brightness = brightness + ambient;
 
 	finalColor = brightness * vec4(light.intensities, 1) * texture(tex, fragTexCoord);
