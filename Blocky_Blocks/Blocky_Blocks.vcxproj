@@ -82,6 +82,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Scene\Bullet.cpp" />
     <ClCompile Include="External\Bitmap.cpp" />
     <ClCompile Include="Holder\Holder.cpp" />
     <ClCompile Include="Holder\Program.cpp" />
@@ -90,9 +91,10 @@
     <ClCompile Include="Holder\Texture2.cpp" />
     <ClCompile Include="Scene\Player.cpp" />
     <ClCompile Include="Scene\Camera.cpp" />
-    <ClCompile Include="Scene\Source.cpp" />
+    <ClCompile Include="Scene\Asset.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Scene\Bullet.h" />
     <ClInclude Include="External\Bitmap.h" />
     <ClInclude Include="Holder\Holder.h" />
     <ClInclude Include="Holder\Program.h" />

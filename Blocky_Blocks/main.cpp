@@ -17,9 +17,10 @@ using namespace glm;
 #include "Holder/Program.h"
 #include "Holder/Texture2.h"
 #include "Scene/Camera.h"
-#include "Scene\Player.h"
+#include "Scene/Player.h"
+#include "Scene/Bullet.h"
 
-#include "Scene/Source.cpp"
+#include "Scene/Asset.cpp"
 
 const vec2 SCREEN_SIZE(800, 600);
 const vec2 CENTER = SCREEN_SIZE * 0.5f;
@@ -32,6 +33,8 @@ std::list<ModelInstance> gInstances;
 //GLfloat gDegreesRotated = 0.0f;
 Light gLight;
 Player* player;
+Bullet* bullet;
+std::list<Bullet*> bullets;
 
 GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
@@ -64,6 +67,9 @@ int main()
     player = new Player(&gWoodenCrate);
     camera = new Camera(player);
     //player->setCamera(camera);
+
+    // XXX: Remove this
+    bullet = nullptr;
 
     //camera->setPosition(vec3(0,0,4));
     camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
@@ -132,7 +138,18 @@ void Update(double time, double deltaT)
         player->jump(timef, deltaTf);
     }
 
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
+        player->shoot(timef, deltaTf, &bullets);
+    }
+
+	// TODO: This should be one list
     player->update(timef, deltaTf);
+
+    std::list<Bullet*>::const_iterator bullet_it;
+    for(bullet_it = bullets.begin(); bullet_it != bullets.end(); ++bullet_it) {
+		Bullet* blt = *bullet_it;
+		blt->update(timef, deltaTf);
+    }
 
     //rotate camera based on mouse movement
     const float mouseSensitivity = 0.1;
@@ -153,7 +170,14 @@ void Draw()
     // one shader to rule them all...
     glUseProgram(player->asset->program->object());
 
+	// TODO: This should be one list
     DrawInstance(*player);
+
+    std::list<Bullet*>::const_iterator bullet_it;
+    for(bullet_it = bullets.begin(); bullet_it != bullets.end(); ++bullet_it) {
+		Bullet* blt = *bullet_it;
+        DrawInstance(*blt);
+    }
 
     std::list<ModelInstance>::const_iterator it;
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
