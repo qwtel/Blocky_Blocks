@@ -14,26 +14,30 @@ class Player : public ModelInstance
 {
 public:
     Player(ModelAsset* ma);
-    ~Player(void);
-    vec3 position();
 
-    void moveLeft(float time, float deltaT);
-    void moveRight(float time, float deltaT);
-    void moveForward(float time, float deltaT);
-    void moveBackward(float time, float deltaT);
-    void jump(float time, float deltaT);
-    void shoot(float time, float deltaT, std::list<Bullet*> *bullets);
+    virtual ~Player(void);
+    virtual vec3 position();
 
-    void update(float time, float deltaT);
+    virtual void moveLeft(float time, float deltaT);
+    virtual void moveRight(float time, float deltaT);
+    virtual void moveForward(float time, float deltaT);
+    virtual void moveBackward(float time, float deltaT);
+    virtual void jump(float time, float deltaT);
+    virtual void shoot(float time, float deltaT, std::list<Bullet*> *bullets);
+
+    virtual void update(float time, float deltaT);
     
-    void offsetLookAngle(float upAngle, float rightAngle);
+    virtual void offsetLookAngle(float upAngle, float rightAngle);
 
     float _horizontalAngle;
     float _verticalAngle;
-private:
+protected:
     vec3 _position;
+private:
     void _offsetPosition(vec3 offset);
+    vec3 _rotateAngle;
 
+    // helper method for directional movement and animation
     void _move(float time, vec3 direction, vec3 rotateDirection);
 
     // true while the cube is moving in a direction
@@ -57,6 +61,8 @@ private:
     // the y coordinate at which the cube started jumping (so it can be reset at the end)
     float _jumpStartHeight;
 
+    // there is only a limited number of shots allowed per second
+    // this is the start time of a shot to enforce the limit
     float _shootStart;
 };
 

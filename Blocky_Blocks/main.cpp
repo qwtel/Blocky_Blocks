@@ -19,6 +19,7 @@ using namespace glm;
 #include "Scene/Camera.h"
 #include "Scene/Player.h"
 #include "Scene/Bullet.h"
+#include "Scene/Enemy.h"
 
 #include "Scene/Asset.cpp"
 
@@ -35,6 +36,7 @@ Light gLight;
 Player* player;
 Bullet* bullet;
 std::list<Bullet*> bullets;
+std::list<Enemy*> enemies;
 
 GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
@@ -68,6 +70,13 @@ int main()
     camera = new Camera(player);
     //player->setCamera(camera);
 
+    double time = glfwGetTime();
+    static const int NumEnemies = 10;
+    for (int i = 0; i < NumEnemies; i++) {
+        Enemy* enemy = new Enemy(&gWoodenCrate, time, player);
+        enemies.push_back(enemy);
+    }
+
     // XXX: Remove this
     bullet = nullptr;
 
@@ -84,7 +93,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // (3) compute the frame time delta
-        double time = glfwGetTime();
+        time = glfwGetTime();
         double deltaT = time - lastTime;
         lastTime = time;
 
@@ -116,9 +125,6 @@ int main()
 
 void Update(double time, double deltaT) 
 {
-    //move position of camera based on WASD keys
-    const float moveSpeed = 4.0; //units per second
-
     float deltaTf = float(deltaT);
     float timef = float(time);
 
@@ -142,13 +148,18 @@ void Update(double time, double deltaT)
         player->shoot(timef, deltaTf, &bullets);
     }
 
-	// TODO: This should be one list
+    // TODO: This should be one list
     player->update(timef, deltaTf);
 
     std::list<Bullet*>::const_iterator bullet_it;
     for(bullet_it = bullets.begin(); bullet_it != bullets.end(); ++bullet_it) {
-		Bullet* blt = *bullet_it;
-		blt->update(timef, deltaTf);
+        Bullet* blt = *bullet_it;
+        blt->update(timef, deltaTf);
+    }
+
+    std::list<Enemy*>::const_iterator it2;
+    for(it2 = enemies.begin(); it2 != enemies.end(); ++it2) {
+        (*it2)->update(timef, deltaTf);
     }
 
     //rotate camera based on mouse movement
@@ -170,18 +181,23 @@ void Draw()
     // one shader to rule them all...
     glUseProgram(player->asset->program->object());
 
-	// TODO: This should be one list
+    // TODO: This should be one list
     DrawInstance(*player);
 
     std::list<Bullet*>::const_iterator bullet_it;
     for(bullet_it = bullets.begin(); bullet_it != bullets.end(); ++bullet_it) {
-		Bullet* blt = *bullet_it;
+    Bullet* blt = *bullet_it;
         DrawInstance(*blt);
     }
 
     std::list<ModelInstance>::const_iterator it;
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
         DrawInstance(*it);
+    }
+
+    std::list<Enemy*>::const_iterator it2;
+    for(it2 = enemies.begin(); it2 != enemies.end(); ++it2){
+        DrawInstance(*(*it2));
     }
 }
 

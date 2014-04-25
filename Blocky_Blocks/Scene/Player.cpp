@@ -23,7 +23,8 @@ Player::Player(ModelAsset* ma) :
     _rotateDirection(),
     _isRotating(false),
     _isJumping(false),
-    _shootStart(0.0f)
+    _shootStart(0.0f),
+    _rotateAngle()
 {
     asset = ma;
     transform = mat4();
@@ -51,22 +52,20 @@ void Player::update(float time, float deltaT)
     static const float JumpDuration = 0.5; //duration of animation
     static const float JumpHeight = 3.0f;
 
-    // this is not good
     transform = glm::translate(mat4(), _position);
+
+    // rotate according to the look direction
     transform = glm::rotate(transform, _horizontalAngle, vec3(0,1,0));
 
     if (_isRotating) {
         if (_rotateStart + MoveDuration < time && !_isJumping) { // can't stop while jumping
             _isRotating = false;
-            _rotateDirection = vec3(0,0,0);
+
+			// TODO: this is not correct
+			_rotateAngle += _rotateDirection * 90.0f;
         } else {
             _offsetPosition(MoveSpeed * deltaT * _moveDirection);
-
             float x = (time - _rotateStart) / MoveDuration;
-
-            // ease-in-out function, see: https://www.wolframalpha.com/input/?i=x%5E2%2F%28x%5E2+%2B+%281-x%29%5E2%29+from+0+to+1
-            //x = pow(x, 2) / (pow(x, 2) + pow((1-x), 2));
-
             float rotateAngle = 90.0f * x;
             transform = glm::rotate(transform, rotateAngle, _rotateDirection);
         }
@@ -91,6 +90,12 @@ void Player::update(float time, float deltaT)
             _position.y = _jumpStartHeight + height * JumpHeight;
         }
     }
+
+    // rotate 90 degree-ish so textures look good
+    transform = glm::rotate(transform, _rotateAngle.z, ZAxis); 
+    transform = glm::rotate(transform, _rotateAngle.y, YAxis); 
+    transform = glm::rotate(transform, _rotateAngle.x, XAxis); 
+
 }
 
 void Player::_move(float time, vec3 direction, vec3 rotateDirection)
@@ -158,12 +163,12 @@ void Player::shoot(float time, float deltaT, std::list<Bullet*> *bullets)
     static const float ShootDuration = 0.1; // 10 shots per second
 
     if (_shootStart + ShootDuration < time) {
-	_shootStart = time;
+        _shootStart = time;
         // TODO: allocation during game is not so good
         Bullet* blt = new Bullet(asset);
         blt->shoot(_position, _horizontalAngle, _verticalAngle, _rotateDirection);
-	bullets->push_back(blt);
+        bullets->push_back(blt);
 
-	// todo make player smaller
+        // todo make player smaller
     }
 }

@@ -82,6 +82,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Scene\Enemy.cpp" />
     <ClCompile Include="Scene\Bullet.cpp" />
     <ClCompile Include="External\Bitmap.cpp" />
     <ClCompile Include="Holder\Holder.cpp" />
@@ -94,6 +95,7 @@
     <ClCompile Include="Scene\Asset.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Scene\Enemy.h" />
     <ClInclude Include="Scene\Bullet.h" />
     <ClInclude Include="External\Bitmap.h" />
     <ClInclude Include="Holder\Holder.h" />

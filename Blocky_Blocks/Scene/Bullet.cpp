@@ -21,7 +21,7 @@ Bullet::Bullet(ModelAsset* ma) :
     _rotateAngle()
 {
     _rotateAngle = rand() % 360 + 1;
-    printf("%f\n", _rotateAngle);
+    // printf("%f\n", _rotateAngle);
     asset = ma;
     transform = mat4();
 }
