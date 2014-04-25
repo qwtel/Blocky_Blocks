@@ -118,7 +118,8 @@ int main()
     while (running && !glfwWindowShouldClose(window))
     {
         // (2) clear the frame and depth buffer
-        glClearColor(0.5f, 0.5f, 1, 1);
+	vec3 bg = vec3(255,245,199) / 255.0f;
+        glClearColor(bg.r, bg.g, bg.b, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // (3) compute the frame time delta
@@ -251,6 +252,7 @@ void DrawInstance(const ModelInstance& inst)
     glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, value_ptr(inst.transform));
     glUniform3f(program->uniform("light.position"), gLight.position.x, gLight.position.y, gLight.position.z);
     glUniform3f(program->uniform("light.intensities"), gLight.intensities.r, gLight.intensities.g, gLight.intensities.b);
+    glUniform3f(program->uniform("color"), inst.color.r, inst.color.g, inst.color.b);
     glUniform1i(program->uniform("tex"), 0);
 
     //bind the texture
@@ -341,7 +343,7 @@ GLFWwindow* openWindow(int width, int height)
 
 static Texture2* LoadTexture()
 {
-    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Texture/block.png");
+    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Blocky_Blocks/Texture/noise.png");
     bmp.flipVertically();
     return new Texture2(bmp);
 }
@@ -466,34 +468,39 @@ static Program* LoadShaders() {
 }
 
 static void CreateInstances() {
+    vec3 color = vec3(132,213,219);
     ModelInstance i;
     i.asset = &gWoodenCrate;
     i.transform = translate(mat4(), vec3(0,-4,0)) * scale(mat4(), vec3(1,2,1));
+    i.color = color;
     gInstances.push_back(i);
 
     ModelInstance hLeft;
     hLeft.asset = &gWoodenCrate;
     hLeft.transform = translate(mat4(), vec3(-8,0,0)) * scale(mat4(), vec3(1,6,1));
+    hLeft.color = color;
     gInstances.push_back(hLeft);
 
     ModelInstance hRight;
     hRight.asset = &gWoodenCrate;
     hRight.transform = translate(mat4(), vec3(-4,0,0)) * scale(mat4(), vec3(1,6,1));
+    hRight.color = color;
     gInstances.push_back(hRight);
 
     ModelInstance hMid;
     hMid.asset = &gWoodenCrate;
     hMid.transform = translate(mat4(), vec3(-6,0,0)) * scale(mat4(), vec3(2,1,0.8));
+    hMid.color = color;
     gInstances.push_back(hMid);
 }
 void ImportScene(const std::string& pFile){
 
     importer = new Assimp::Importer();
     scene = importer->ReadFile(pFile,
-        aiProcess_Triangulate            |
-        aiProcess_GenSmoothNormals		 |
-        aiProcess_JoinIdenticalVertices  |
-        aiProcess_ImproveCacheLocality	 |
+        aiProcess_Triangulate               |
+        aiProcess_GenSmoothNormals          |
+        aiProcess_JoinIdenticalVertices     |
+        aiProcess_ImproveCacheLocality      |
         aiProcess_SortByPType);
 
     for(unsigned int i = 0; i < scene->mNumMeshes; i++)

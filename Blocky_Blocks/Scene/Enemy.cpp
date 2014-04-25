@@ -20,7 +20,8 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, std::list<Bullet*>* bullets
 	_bullets(bullets)
 {
     _position = vec3(rand() % 50 + 1, 0, rand() % 50 + 1);
-    printf("%f, %f, %f\n", _position.x, _position.y, _position.z);
+    //printf("%f, %f, %f\n", _position.x, _position.y, _position.z);
+    color = vec3(255,153,153);
 }
 
 Enemy::~Enemy(void)

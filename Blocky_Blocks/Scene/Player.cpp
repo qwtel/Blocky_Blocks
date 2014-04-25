@@ -28,6 +28,7 @@ Player::Player(ModelAsset* ma) :
 {
     asset = ma;
     transform = mat4();
+    color = vec3(132,213,219);
 }
 
 Player::~Player(void)
@@ -182,7 +183,7 @@ void Player::shoot(float time, float deltaT, std::list<Bullet*> *bullets)
     if (_shootStart + ShootDuration < time) {
         _shootStart = time;
         // TODO: allocation during game is not so good
-        Bullet* blt = new Bullet(asset);
+        Bullet* blt = new Bullet(asset, color);
         blt->shoot(_position, _horizontalAngle, _verticalAngle, _rotateDirection);
         bullets->push_back(blt);
 

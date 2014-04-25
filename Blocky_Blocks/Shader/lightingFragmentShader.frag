@@ -2,6 +2,7 @@
 
 uniform mat4 model;
 uniform sampler2D tex;
+uniform vec3 color;
 
 uniform struct Light {
 	vec3 position;
@@ -25,8 +26,8 @@ void main() {
 	float brightness = dot(normal, surfaceToLight);
 	brightness = max(brightness, 0);
 
-	float ambient = 0.8;
+	float ambient = 0.5;
 	brightness = brightness + ambient;
 
-	finalColor = brightness * vec4(light.intensities, 1) * texture(tex, fragTexCoord);
+	finalColor = brightness * vec4(light.intensities, 1) * vec4((color / 255.0), 1) * texture(tex, fragTexCoord);
 }

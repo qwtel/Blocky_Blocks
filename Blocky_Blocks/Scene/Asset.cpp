@@ -19,9 +19,10 @@ struct ModelAsset {
 struct ModelInstance {
     ModelAsset* asset;
     mat4 transform;
+    vec3 color;
 };
 
 struct Light {
     vec3 position;
-    vec3 intensities; //a.k.a. the color of the light
+    vec3 intensities;
 };

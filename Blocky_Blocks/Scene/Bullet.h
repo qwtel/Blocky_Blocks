@@ -12,7 +12,7 @@ using namespace glm;
 class Bullet : public ModelInstance
 {
 public:
-    Bullet(ModelAsset* ma);
+    Bullet(ModelAsset* ma, vec3 color);
     ~Bullet(void);
     vec3 position();
     void update(float time, float deltaT);
