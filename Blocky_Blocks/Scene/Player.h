@@ -27,6 +27,7 @@ public:
 
     virtual void update(float time, float deltaT);
     
+    virtual void setLookAngle(float upAngle, float rightAngle);
     virtual void offsetLookAngle(float upAngle, float rightAngle);
 
     float _horizontalAngle;

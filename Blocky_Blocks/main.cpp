@@ -73,7 +73,7 @@ int main()
     double time = glfwGetTime();
     static const int NumEnemies = 10;
     for (int i = 0; i < NumEnemies; i++) {
-        Enemy* enemy = new Enemy(&gWoodenCrate, time, player);
+        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets);
         enemies.push_back(enemy);
     }
 
@@ -152,9 +152,18 @@ void Update(double time, double deltaT)
     player->update(timef, deltaTf);
 
     std::list<Bullet*>::const_iterator bullet_it;
-    for(bullet_it = bullets.begin(); bullet_it != bullets.end(); ++bullet_it) {
+    for(bullet_it = bullets.begin(); bullet_it != bullets.end();) {
         Bullet* blt = *bullet_it;
-        blt->update(timef, deltaTf);
+
+        if (blt->_posi.x > 100 || blt->_posi.y > 100 || blt->_posi.z > 100 ||
+            blt->_posi.x < -100 || blt->_posi.y < -100 || blt->_posi.z < -100)
+        {
+            bullet_it = bullets.erase(bullet_it);
+            delete blt;
+        } else {
+            blt->update(timef, deltaTf);
+            ++bullet_it;
+        }
     }
 
     std::list<Enemy*>::const_iterator it2;
@@ -186,7 +195,7 @@ void Draw()
 
     std::list<Bullet*>::const_iterator bullet_it;
     for(bullet_it = bullets.begin(); bullet_it != bullets.end(); ++bullet_it) {
-    Bullet* blt = *bullet_it;
+        Bullet* blt = *bullet_it;
         DrawInstance(*blt);
     }
 

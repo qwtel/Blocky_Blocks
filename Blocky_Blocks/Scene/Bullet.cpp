@@ -45,7 +45,6 @@ void Bullet::update(float time, float deltaT)
 {
     _posi= _posi + _direction * _velocity * deltaT;
 
-
     transform = glm::translate(mat4(), _posi);
     transform = glm::rotate(transform, _horizontalAngle, vec3(0,1,0));
     transform = glm::rotate(transform, _verticalAngle, vec3(1,0,0));

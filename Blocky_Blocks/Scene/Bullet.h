@@ -17,8 +17,8 @@ public:
     vec3 position();
     void update(float time, float deltaT);
     void shoot(vec3 from, float x, float y, vec3 rotateDirection);
-private:
     vec3 _posi;
+private:
     vec3 _direction;
     float _velocity;
     vec3 _rotateDirection;

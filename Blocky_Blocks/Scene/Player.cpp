@@ -158,6 +158,23 @@ void Player::offsetLookAngle(float upAngle, float rightAngle)
         _verticalAngle = -MaxVerticalAngle;
 }
 
+void Player::setLookAngle(float upAngle, float rightAngle)
+{
+    _verticalAngle = upAngle;
+    _horizontalAngle = rightAngle;
+
+    _horizontalAngle = fmodf(_horizontalAngle, 360.0f);
+
+    //fmodf can return negative values, but this will make them all positive
+    if(_horizontalAngle < 0.0f)
+        _horizontalAngle += 360.0f;
+
+    if(_verticalAngle > MaxVerticalAngle)
+        _verticalAngle = MaxVerticalAngle;
+    else if(_verticalAngle < -MaxVerticalAngle)
+        _verticalAngle = -MaxVerticalAngle;
+}
+
 void Player::shoot(float time, float deltaT, std::list<Bullet*> *bullets)
 {
     static const float ShootDuration = 0.1; // 10 shots per second
