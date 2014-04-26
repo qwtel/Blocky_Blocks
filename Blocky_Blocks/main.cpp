@@ -1,11 +1,18 @@
 #pragma once
 
+#include <iostream>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <list>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+
+#include <assimp/Importer.hpp>      
+#include <assimp/scene.h>           
+#include <assimp/postprocess.h>
+#include <vector>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -21,6 +28,7 @@ using namespace glm;
 #include "Scene/Bullet.h"
 #include "Scene/Enemy.h"
 
+#include "Scene/Mesh.h"
 #include "Scene/Asset.cpp"
 
 const vec2 SCREEN_SIZE(800, 600);
@@ -30,6 +38,7 @@ GLFWwindow* window;
 Camera* camera;
 
 ModelAsset gWoodenCrate;
+ModelAsset gWorld;
 std::list<ModelInstance> gInstances;
 //GLfloat gDegreesRotated = 0.0f;
 Light gLight;
@@ -37,6 +46,17 @@ Player* player;
 Bullet* bullet;
 std::list<Bullet*> bullets;
 std::list<Enemy*> enemies;
+GLuint positionBuffer;
+GLuint normalBuffer;
+GLuint indexBuffer;
+GLuint uvBuffer;
+GLuint voa;
+
+
+const aiScene* scene;
+Assimp::Importer* importer;
+
+vector<Mesh*> meshes;
 
 GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
@@ -45,9 +65,12 @@ void DrawInstance(const ModelInstance& inst);
 void cleanup();
 
 static void LoadWoodenCrateAsset();
+static void LoadWorld();
 static Program* LoadShaders();
 static Texture2* LoadTexture();
 static void CreateInstances();
+void ImportScene(const std::string& pFile);
+void LoadWorld();
 
 int main() 
 {
@@ -60,11 +83,17 @@ int main()
     bool running = true;
     double lastTime = 0;
 
+    //import cube from file
+    ImportScene("Models/cube.obj"); 
+
     // initialise the gWoodenCrate asset
     LoadWoodenCrateAsset();
-
     // create all the instances in the 3D scene based on the gWoodenCrate asset
-    CreateInstances();
+    //CreateInstances();
+
+    //initialise world
+    ImportScene("Models/world.obj");
+    LoadWorld();
 
     player = new Player(&gWoodenCrate);
     camera = new Camera(player);
@@ -106,7 +135,6 @@ int main()
 
         // (6) draw all game components
         Draw();
-
         // (6.5) swap buffers
         glfwSwapBuffers(window);
 
@@ -231,8 +259,8 @@ void DrawInstance(const ModelInstance& inst)
 
     //bind VAO and draw
     glBindVertexArray(asset->vao);
-    glDrawArrays(asset->drawType, asset->drawStart, asset->drawCount);
-
+    //glDrawArrays(asset->drawType, asset->drawStart, asset->drawCount);
+    glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
     //unbind everything
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -242,6 +270,21 @@ void DrawInstance(const ModelInstance& inst)
 
 void cleanup()
 {
+    glDeleteVertexArrays(1, &gWoodenCrate.vao);
+    glDeleteVertexArrays(1, &gWoodenCrate.vbo);
+    glDeleteBuffers(1, &positionBuffer);
+    glDeleteBuffers(1, &indexBuffer);
+    glDeleteBuffers(1, &normalBuffer);
+    glDeleteBuffers(1, &uvBuffer);
+
+    importer->FreeScene();
+    delete importer;
+    for(unsigned int i = 0; i < meshes.size(); i++)
+    {
+        delete meshes[i];
+    }
+
+
 }
 
 GLFWwindow* openWindow(int width, int height) 
@@ -298,7 +341,7 @@ GLFWwindow* openWindow(int width, int height)
 
 static Texture2* LoadTexture()
 {
-    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Blocky_Blocks/Texture/block.png");
+    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Texture/block.png");
     bmp.flipVertically();
     return new Texture2(bmp);
 }
@@ -321,77 +364,104 @@ static void LoadWoodenCrateAsset()
 
     // TODO: Load vertexData from file
     // Make a cube out of triangles (two triangles per side)
-    GLfloat vertexData[] = {
-        //  X     Y     Z       U     V          Normal
-        // bottom
-        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+    //GLfloat vertexData[] = {
+    //    //  X     Y     Z       U     V          Normal
+    //    // bottom
+    //    -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+    //    1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+    //    -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+    //    1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+    //    1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+    //    -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
 
-        // top
-        -1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+    //    // top
+    //    -1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+    //    -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+    //    1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+    //    1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+    //    -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+    //    1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
 
-        // front
-        -1.0f,-1.0f, 1.0f,   1.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-        1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-        1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+    //    // front
+    //    -1.0f,-1.0f, 1.0f,   1.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+    //    1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+    //    -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+    //    1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+    //    1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+    //    -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
 
-        // back
-        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-        1.0f, 1.0f,-1.0f,   1.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+    //    // back
+    //    -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+    //    -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+    //    1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+    //    1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+    //    -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+    //    1.0f, 1.0f,-1.0f,   1.0f, 1.0f,   0.0f, 0.0f, -1.0f,
 
-        // left
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+    //    // left
+    //    -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+    //    -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+    //    -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+    //    -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+    //    -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+    //    -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
 
-        // right
-        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f
-    };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
+    //    // right
+    //    1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
+    //    1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+    //    1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+    //    1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
+    //    1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+    //    1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f
+    //};
+    glGenBuffers(1, &positionBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    glGenBuffers(1, &indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[0]->numIndices * sizeof(unsigned int), meshes[0]->indices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glGenBuffers(1, &normalBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->normals, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glGenBuffers(1, &uvBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 2 * sizeof(float), meshes[0]->textureCoords, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
     // connect the xyz to the "vert" attribute of the vertex shader
+    glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vert"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), NULL);
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     // connect the uv coords to the "vertTexCoord" attribute of the vertex shader
+    glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertTexCoord"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_TRUE,  8*sizeof(GLfloat), (const GLvoid*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  0, 0);
 
     // connect the normal to the "vertNormal" attribute of the vertex shader
+    glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertNormal"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_TRUE,  8*sizeof(GLfloat), (const GLvoid*)(5 * sizeof(GLfloat)));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
 
     // unbind the VAO
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 }
 
 static Program* LoadShaders() {
-    Shader* vertexShader = new Shader("Blocky_Blocks/Shader/lightingVertexShader.vert", GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader("Blocky_Blocks/Shader/lightingFragmentshader.frag", GL_FRAGMENT_SHADER);
+    Shader* vertexShader = new Shader("Shader/lightingVertexShader.vert", GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader("Shader/lightingFragmentshader.frag", GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
@@ -415,4 +485,95 @@ static void CreateInstances() {
     hMid.asset = &gWoodenCrate;
     hMid.transform = translate(mat4(), vec3(-6,0,0)) * scale(mat4(), vec3(2,1,0.8));
     gInstances.push_back(hMid);
+}
+void ImportScene(const std::string& pFile){
+
+    importer = new Assimp::Importer();
+    scene = importer->ReadFile(pFile,
+        aiProcess_Triangulate            |
+        aiProcess_GenSmoothNormals		 |
+        aiProcess_JoinIdenticalVertices  |
+        aiProcess_ImproveCacheLocality	 |
+        aiProcess_SortByPType);
+
+    for(unsigned int i = 0; i < scene->mNumMeshes; i++)
+    {
+        Mesh* tempMesh = new Mesh(scene->mMeshes[i]->mNumVertices,
+            scene->mMeshes[i]->mVertices,
+            scene->mMeshes[i]->mNormals,
+            scene->mMeshes[i]->mNumFaces,
+            scene->mMeshes[i]->mFaces,
+            scene->mMeshes[i]->mTextureCoords[0]);
+
+        meshes.push_back(tempMesh);
+    }
+}
+
+static void LoadWorld()
+{
+    for(unsigned int i = 0; i < meshes.size(); i++){
+
+        gWorld.program = LoadShaders();
+        gWorld.drawType = GL_TRIANGLES;
+        gWorld.drawStart = 0;
+        gWorld.drawCount = meshes[i]->numIndices;
+        gWorld.texture = LoadTexture();
+        glGenBuffers(1, &gWorld.vbo);
+        glGenVertexArrays(1, &gWorld.vao);
+
+        // bind the VAO
+        glBindVertexArray(gWorld.vao);
+
+        // bind the VBO
+        glBindBuffer(GL_ARRAY_BUFFER, gWorld.vbo);
+
+        // TODO: Load vertexData from file
+        glGenBuffers(1, &positionBuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
+        glBufferData(GL_ARRAY_BUFFER, meshes[i]->numVertices* 3 * sizeof(float), meshes[i]->vertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glGenBuffers(1, &indexBuffer);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[i]->numIndices * sizeof(unsigned int), meshes[i]->indices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        glGenBuffers(1, &normalBuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
+        glBufferData(GL_ARRAY_BUFFER, meshes[i]->numVertices* 3 * sizeof(float), meshes[i]->normals, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glGenBuffers(1, &uvBuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+        glBufferData(GL_ARRAY_BUFFER, meshes[i]->numVertices* 2 * sizeof(float), meshes[i]->textureCoords, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        //glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
+        // connect the xyz to the "vert" attribute of the vertex shader
+        glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
+        glEnableVertexAttribArray(gWorld.program->attrib("vert"));
+        glVertexAttribPointer(gWorld.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+        // connect the uv coords to the "vertTexCoord" attribute of the vertex shader
+        glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+        glEnableVertexAttribArray(gWorld.program->attrib("vertTexCoord"));
+        glVertexAttribPointer(gWorld.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  0, 0);
+
+        // connect the normal to the "vertNormal" attribute of the vertex shader
+        glBindBuffer(GL_ARRAY_BUFFER, normalBuffer);
+        glEnableVertexAttribArray(gWorld.program->attrib("vertNormal"));
+        glVertexAttribPointer(gWorld.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+        // unbind the VAO
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+    ModelInstance world;
+    world.asset = &gWorld;
+    world.transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(1.5,1.5,1.5));
+    gInstances.push_back(world);
+
 }
