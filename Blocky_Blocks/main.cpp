@@ -118,7 +118,7 @@ int main()
     while (running && !glfwWindowShouldClose(window))
     {
         // (2) clear the frame and depth buffer
-	vec3 bg = vec3(255,245,199) / 255.0f;
+	vec3 bg = vec3(182,148,233) / 255.0f;
         glClearColor(bg.r, bg.g, bg.b, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -177,8 +177,14 @@ void Update(double time, double deltaT)
         player->shoot(timef, deltaTf, &bullets);
     }
 
-    // TODO: This should be one list
+    // TODO: All these could be in one list
     player->update(timef, deltaTf);
+
+    // since enemies can shoot, update them before the bullets 
+    std::list<Enemy*>::const_iterator it2;
+    for(it2 = enemies.begin(); it2 != enemies.end(); ++it2) {
+        (*it2)->update(timef, deltaTf);
+    }
 
     std::list<Bullet*>::const_iterator bullet_it;
     for(bullet_it = bullets.begin(); bullet_it != bullets.end();) {
@@ -193,11 +199,6 @@ void Update(double time, double deltaT)
             blt->update(timef, deltaTf);
             ++bullet_it;
         }
-    }
-
-    std::list<Enemy*>::const_iterator it2;
-    for(it2 = enemies.begin(); it2 != enemies.end(); ++it2) {
-        (*it2)->update(timef, deltaTf);
     }
 
     //rotate camera based on mouse movement
@@ -219,7 +220,7 @@ void Draw()
     // one shader to rule them all...
     glUseProgram(player->asset->program->object());
 
-    // TODO: This should be one list
+    // TODO: All these could be in one list
     DrawInstance(*player);
 
     std::list<Bullet*>::const_iterator bullet_it;

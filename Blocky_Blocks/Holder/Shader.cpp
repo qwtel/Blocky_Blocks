@@ -48,15 +48,15 @@ Shader::~Shader(void)
 string Shader::readFile(const char* filePath)
 {
     string shaderCode;
-    ifstream vertexShaderStream(filePath, ios::in);
-    if (vertexShaderStream.is_open())
+    ifstream shaderStream(filePath, ios::in);
+    if (shaderStream.is_open())
     {
         string line = "";
-        while(getline(vertexShaderStream, line))
+        while(getline(shaderStream, line))
         {
             shaderCode += "\n" + line;
         }
-        vertexShaderStream.close();
+        shaderStream.close();
     } 
     else
     {

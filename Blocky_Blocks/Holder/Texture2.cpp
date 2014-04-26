@@ -11,15 +11,15 @@ static GLenum TextureFormatForBitmapFormat(tdogl::Bitmap::Format format)
     }
 }
 
-Texture2::Texture2(tdogl::Bitmap bmp, GLint minMagFiler, GLint wrapMode) : 
+Texture2::Texture2(tdogl::Bitmap bmp, GLint minMagFilter, GLint wrapMode) : 
     Holder(),
     _width((GLfloat)bmp.width()),
     _height((GLfloat)bmp.height())
 {
     glGenTextures(1, &_object);
     glBindTexture(GL_TEXTURE_2D, _object);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minMagFiler);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, minMagFiler);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minMagFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, minMagFilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
     glTexImage2D(GL_TEXTURE_2D,
@@ -31,6 +31,7 @@ Texture2::Texture2(tdogl::Bitmap bmp, GLint minMagFiler, GLint wrapMode) :
         TextureFormatForBitmapFormat(bmp.format()), 
         GL_UNSIGNED_BYTE, 
         bmp.pixelBuffer());
+
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 

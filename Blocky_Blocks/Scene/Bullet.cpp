@@ -40,6 +40,8 @@ void Bullet::shoot(vec3 from, float x, float y, vec3 rotateDirection)
     _rotateDirection = rotateDirection;
     _direction = glm::rotate(vec3(0,0,1), y, vec3(1,0,0));
     _direction = glm::rotate(_direction, x, vec3(0,1,0));
+
+    // TODO: should have the correct transform matrix by now
 }
 
 void Bullet::update(float time, float deltaT)

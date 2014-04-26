@@ -10,7 +10,7 @@ class Texture2 : public Holder
 {
 public:
     Texture2(tdogl::Bitmap bmp, 
-        GLint minMagFiler = GL_LINEAR,
+        GLint minMagFilter = GL_LINEAR,
         GLint wrapMode = GL_REPEAT);
     virtual ~Texture2(void);
 
