@@ -94,6 +94,8 @@
     <None Include="Shader\cameraVertexShader.vert" />
     <None Include="Shader\lightingVertexShader.vert" />
     <None Include="Shader\lightingFragmentShader.frag" />
+    <None Include="Models\cube.model" />
+    <None Include="Models\world.model" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Texture\hazard.png">

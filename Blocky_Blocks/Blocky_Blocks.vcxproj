@@ -41,9 +41,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -111,6 +113,8 @@
     <Text Include="Shader\fragmentshader.frag" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Models\cube.model" />
+    <None Include="Models\world.model" />
     <None Include="Shader\cameraVertexShader.vert" />
     <None Include="Shader\lightingFragmentShader.frag" />
     <None Include="Shader\lightingVertexShader.vert" />

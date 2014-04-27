@@ -53,7 +53,6 @@ GLuint uvBuffer;
 GLuint voa;
 
 
-const aiScene* scene;
 Assimp::Importer* importer;
 
 vector<Mesh*> meshes;
@@ -344,7 +343,7 @@ GLFWwindow* openWindow(int width, int height)
 
 static Texture2* LoadTexture()
 {
-    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Blocky_Blocks/Texture/noise.png");
+    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Texture/noise.png");
     bmp.flipVertically();
     return new Texture2(bmp);
 }
@@ -494,10 +493,11 @@ static void CreateInstances() {
     hMid.color = color;
     gInstances.push_back(hMid);
 }
+
 void ImportScene(const std::string& pFile){
 
     importer = new Assimp::Importer();
-    scene = importer->ReadFile(pFile,
+    const aiScene* scene = importer->ReadFile(pFile,
         aiProcess_Triangulate               |
         aiProcess_GenSmoothNormals          |
         aiProcess_JoinIdenticalVertices     |
@@ -579,9 +579,11 @@ static void LoadWorld()
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
+
     ModelInstance world;
     world.asset = &gWorld;
     world.transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(1.5,1.5,1.5));
+    world.color = vec3(182,148,233);
     gInstances.push_back(world);
 
 }
