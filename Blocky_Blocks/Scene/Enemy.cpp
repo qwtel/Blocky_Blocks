@@ -19,7 +19,7 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, std::list<Bullet*>* bullets
     _waitTime(rand() % 2),
 	_bullets(bullets)
 {
-    _position = vec3(rand() % 50 + 1, 0, rand() % 50 + 1);
+    _position = vec3(rand() % 50 - 25, 0, rand() % 50 - 25);
     //printf("%f, %f, %f\n", _position.x, _position.y, _position.z);
     color = vec3(255,153,153);
 }
@@ -44,8 +44,6 @@ void Enemy::update(float time, float deltaT)
 			moveForward(time, deltaT);
 		} else if (dir == 4) {
 			moveBackward(time, deltaT);
-		} else {
-			printf("fucked up");
 		}
 
 		_lastMove = time;

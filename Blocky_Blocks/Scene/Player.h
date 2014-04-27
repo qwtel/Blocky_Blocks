@@ -30,6 +30,7 @@ public:
     virtual void setLookAngle(float upAngle, float rightAngle);
     virtual void offsetLookAngle(float upAngle, float rightAngle);
 
+    float actualHorizontalAngle;
     float _horizontalAngle;
     float _verticalAngle;
 protected:
@@ -65,5 +66,8 @@ private:
     // there is only a limited number of shots allowed per second
     // this is the start time of a shot to enforce the limit
     float _shootStart;
+
+    vec3 _rotateStartPosition;
+    float _rotateStartHorizontalAngle;
 };
 

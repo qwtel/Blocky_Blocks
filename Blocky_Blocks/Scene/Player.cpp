@@ -53,25 +53,6 @@ void Player::update(float time, float deltaT)
     static const float JumpDuration = 0.5; //duration of animation
     static const float JumpHeight = 3.0f;
 
-    transform = glm::translate(mat4(), _position);
-
-    // rotate according to the look direction
-    transform = glm::rotate(transform, _horizontalAngle, vec3(0,1,0));
-
-    if (_isRotating) {
-        if (_rotateStart + MoveDuration < time && !_isJumping) { // can't stop while jumping
-            _isRotating = false;
-
-			// TODO: this is not correct
-			_rotateAngle += _rotateDirection * 90.0f;
-        } else {
-            _offsetPosition(MoveSpeed * deltaT * _moveDirection);
-            float x = (time - _rotateStart) / MoveDuration;
-            float rotateAngle = 90.0f * x;
-            transform = glm::rotate(transform, rotateAngle, _rotateDirection);
-        }
-    }
-
     if (_isJumping) {
         if (_jumpStart + JumpDuration < time) {
             _isJumping = false;
@@ -92,6 +73,48 @@ void Player::update(float time, float deltaT)
         }
     }
 
+
+    if (_isRotating) {
+        if (_rotateStart + MoveDuration < time && !_isJumping) { // can't stop while jumping
+            _isRotating = false;
+
+            // TODO: this is not correct
+            _rotateAngle += _rotateDirection * 90.0f;
+        } else {
+            _offsetPosition(MoveSpeed * deltaT * _moveDirection);
+            float x = (time - _rotateStart) / MoveDuration;
+            float rotateAngle = 90.0f * x;
+
+            // this is necessary to rotate around the edge of the cube
+            vec3 bla = vec3();
+            if (_rotateDirection == LeftRotate) {
+                bla = vec3(1, -1, 0);
+            } else if (_rotateDirection == RightRotate) {
+                bla = vec3(-1, -1, 0);
+            } else if (_rotateDirection == ForwardRotate) {
+                bla = vec3(0, -1, 1);
+            } else if (_rotateDirection == BackwardRotate) {
+                bla = vec3(0, -1, -1);
+            }
+
+			// translate to the position at the start of the rotation
+            transform = glm::translate(mat4(), vec3(_rotateStartPosition.x , _position.y, _rotateStartPosition.z));
+
+            // rotate according to the look direction at the start of the rotation
+            transform = glm::rotate(transform, _rotateStartHorizontalAngle, vec3(0,1,0));
+
+            transform = glm::translate(transform, bla);
+            transform = glm::rotate(transform, rotateAngle, _rotateDirection);
+            transform = glm::translate(transform, -bla);
+        }
+    } else {
+
+        transform = glm::translate(mat4(), _position);
+
+        // rotate according to the look direction
+        transform = glm::rotate(transform, _horizontalAngle, vec3(0,1,0));
+    }
+
     // rotate 90 degree-ish so textures look good
     transform = glm::rotate(transform, _rotateAngle.z, ZAxis); 
     transform = glm::rotate(transform, _rotateAngle.y, YAxis); 
@@ -106,6 +129,8 @@ void Player::_move(float time, vec3 direction, vec3 rotateDirection)
         _moveDirection = direction;
         _rotateDirection = rotateDirection;
         _rotateStart = time;
+        _rotateStartPosition = _position;
+		_rotateStartHorizontalAngle = _horizontalAngle;
     }
 }
 
