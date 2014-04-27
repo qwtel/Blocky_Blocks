@@ -84,7 +84,7 @@ int main()
     double lastTime = 0;
 
     //import cube from file
-    ImportScene("Models/cube.obj"); 
+    ImportScene("Models/cube.model"); 
 
     // initialise the gWoodenCrate asset
     LoadWoodenCrateAsset();
@@ -92,7 +92,7 @@ int main()
     //CreateInstances();
 
     //initialise world
-    ImportScene("Models/world.obj");
+    ImportScene("Models/world.model");
     LoadWorld();
 
     player = new Player(&gWoodenCrate);
