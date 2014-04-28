@@ -13,7 +13,7 @@ using namespace glm;
 class Player : public ModelInstance
 {
 public:
-    Player(ModelAsset* ma);
+    Player(ModelAsset* ma, Material* mat);
 
     virtual ~Player(void);
     virtual vec3 position();

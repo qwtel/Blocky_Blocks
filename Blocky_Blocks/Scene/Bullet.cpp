@@ -14,7 +14,7 @@ static const vec3 LeftRotate = -ZAxis;
 static const vec3 Right = -Left;
 static const vec3 RightRotate = -LeftRotate;
 
-Bullet::Bullet(ModelAsset* ma, vec3 c) :
+Bullet::Bullet(ModelAsset* ma, Material* mat) :
     _posi(),
     _velocity(50.0f), // todo
     _direction(),
@@ -24,7 +24,7 @@ Bullet::Bullet(ModelAsset* ma, vec3 c) :
     // printf("%f\n", _rotateAngle);
     asset = ma;
     transform = mat4();
-    color = c;
+    material = mat;
 }
 
 

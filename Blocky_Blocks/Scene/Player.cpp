@@ -17,7 +17,7 @@ static const vec3 RightRotate = -LeftRotate;
 static const float MinVerticalAngle = -25.0f;
 static const float MaxVerticalAngle = 65.0f;
 
-Player::Player(ModelAsset* ma) :
+Player::Player(ModelAsset* ma, Material* mat) :
     _position(vec3()),
     _horizontalAngle(0.0f),
     _verticalAngle(0.0f),
@@ -28,8 +28,8 @@ Player::Player(ModelAsset* ma) :
     _rotateAngle()
 {
     asset = ma;
+    material = mat;
     transform = mat4();
-    color = vec3(132,213,219);
 }
 
 Player::~Player(void)
@@ -184,7 +184,7 @@ void Player::shoot(float time, float deltaT, std::list<Bullet*> *bullets)
     if (_shootStart + ShootDuration < time) {
         _shootStart = time;
         // TODO: allocation during game is not so good
-        Bullet* blt = new Bullet(asset, color);
+        Bullet* blt = new Bullet(asset, material);
         blt->shoot(_position, _horizontalAngle, _verticalAngle, _rotateDirection);
         bullets->push_back(blt);
 

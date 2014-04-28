@@ -40,7 +40,6 @@ Camera* camera;
 ModelAsset gWoodenCrate;
 ModelAsset gWorld;
 std::list<ModelInstance> gInstances;
-//GLfloat gDegreesRotated = 0.0f;
 Light gLight;
 Player* player;
 std::list<Bullet*> bullets;
@@ -69,6 +68,7 @@ static void CreateInstances();
 static void ImportScene(const std::string& pFile);
 static void LoadWorld();
 static void CreateWorldInstance();
+static Material* GiveMaterial(vec3 color);
 
 static const std::string Assets(const std::string& path) {
     return "Assets/" + path;
@@ -98,14 +98,14 @@ int main()
     LoadWorld();
     CreateWorldInstance();
 
-    player = new Player(&gWoodenCrate);
+    player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219)));
     camera = new Camera(player);
     //player->setCamera(camera);
 
     double time = glfwGetTime();
     static const int NumEnemies = 10;
     for (int i = 0; i < NumEnemies; i++) {
-        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets);
+        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets, GiveMaterial(vec3(255,153,153)));
         enemies.push_back(enemy);
     }
 
@@ -113,7 +113,9 @@ int main()
     camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
 
     gLight.position = camera->position();
-    gLight.intensities = glm::vec3(1,1,1);
+    gLight.intensities = vec3(1,1,1);
+    gLight.attenuation = 0.002f;
+    gLight.ambientCoefficient = 0.75f;
 
     while (running && !glfwWindowShouldClose(window))
     {
@@ -245,6 +247,7 @@ void Draw()
 void DrawInstance(const ModelInstance& inst)
 {
     ModelAsset* asset = inst.asset;
+    Material* material = inst.material;
     Program* program = asset->program;
 
     // bind the shaders
@@ -256,14 +259,23 @@ void DrawInstance(const ModelInstance& inst)
 
     // bind the texture
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, asset->texture->object());
+    glBindTexture(GL_TEXTURE_2D, material->texture->object());
 
     // set the shader uniforms
-    glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, value_ptr(camera->matrix()));
-    glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, value_ptr(inst.transform));
-    glUniform3f(program->uniform("light.position"), gLight.position.x, gLight.position.y, gLight.position.z);
-    glUniform3f(program->uniform("light.intensities"), gLight.intensities.r, gLight.intensities.g, gLight.intensities.b);
-    glUniform3f(program->uniform("color"), inst.color.r, inst.color.g, inst.color.b);
+    glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera->matrix()));
+    glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, glm::value_ptr(inst.transform));
+
+    glUniform3fv(program->uniform("light.cameraPosition"), 1, glm::value_ptr(camera->position()));
+
+    glUniform3fv(program->uniform("light.position"), 1, glm::value_ptr(gLight.position));
+    glUniform3fv(program->uniform("light.intensities"), 1, glm::value_ptr(gLight.intensities));
+    glUniform1f(program->uniform("light.attenuation"), gLight.attenuation);
+    glUniform1f(program->uniform("light.ambientCoefficient"), gLight.ambientCoefficient);
+
+    glUniform3fv(program->uniform("material.color"), 1, glm::value_ptr(material->color)); 
+    glUniform3fv(program->uniform("material.specularColor"), 1, glm::value_ptr(material->specularColor));
+    glUniform1f(program->uniform("material.shininess"), material->shininess);
+
     glUniform1i(program->uniform("tex"), 0);
 
     if(asset->drawCount <= 36){
@@ -279,7 +291,7 @@ void DrawInstance(const ModelInstance& inst)
 
     // unbind shaders
     // NOTE: since we only have one program we dont need to do this
-    //glUseProgram(0);
+    // glUseProgram(0);
 }
 
 void cleanup()
@@ -366,7 +378,7 @@ static void LoadWoodenCrateAsset()
     gWoodenCrate.drawType = GL_TRIANGLES;
     gWoodenCrate.drawStart = 0;
     gWoodenCrate.drawCount = 6*2*3;
-    gWoodenCrate.texture = LoadTexture();
+    //gWoodenCrate.texture = LoadTexture();
     glGenBuffers(1, &gWoodenCrate.vbo);
     glGenVertexArrays(1, &gWoodenCrate.vao);
 
@@ -452,30 +464,43 @@ static Program* LoadShaders() {
     return new Program(vertexShader, fragmentShader);
 }
 
+static Material* GiveMaterial(vec3 color)
+{
+    Material* m = new Material();
+    m->texture = LoadTexture();
+    m->color = color;
+    m->shininess = 80.0f;
+    m->specularColor = vec3(1,1,1);
+    return m;
+}
+
 static void CreateInstances() {
     vec3 color = vec3(132,213,219);
+
+    Material* m = GiveMaterial(color);
+
     ModelInstance i;
     i.asset = &gWoodenCrate;
     i.transform = translate(mat4(), vec3(0,-4,0)) * scale(mat4(), vec3(1,2,1));
-    i.color = color;
+    i.material = m;
     gInstances.push_back(i);
 
     ModelInstance hLeft;
     hLeft.asset = &gWoodenCrate;
     hLeft.transform = translate(mat4(), vec3(-8,0,0)) * scale(mat4(), vec3(1,6,1));
-    hLeft.color = color;
+    i.material = m;
     gInstances.push_back(hLeft);
 
     ModelInstance hRight;
     hRight.asset = &gWoodenCrate;
     hRight.transform = translate(mat4(), vec3(-4,0,0)) * scale(mat4(), vec3(1,6,1));
-    hRight.color = color;
+    i.material = m;
     gInstances.push_back(hRight);
 
     ModelInstance hMid;
     hMid.asset = &gWoodenCrate;
     hMid.transform = translate(mat4(), vec3(-6,0,0)) * scale(mat4(), vec3(2,1,0.8));
-    hMid.color = color;
+    i.material = m;
     gInstances.push_back(hMid);
 }
 
@@ -507,7 +532,9 @@ static void CreateWorldInstance()
     ModelInstance world;
     world.asset = &gWorld;
     world.transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(3, 1.5, 3));
-    world.color = vec3(182,148,233);
+    Material* m = GiveMaterial(vec3(182,148,233));
+    //world.color = vec3(182,148,233);
+    world.material = m;
     gInstances.push_back(world);
 }
 
@@ -517,7 +544,7 @@ static void LoadWorld()
     gWorld.drawType = GL_TRIANGLES;
     gWorld.drawStart = 0;
     gWorld.drawCount = meshes[1]->numIndices;
-    gWorld.texture = LoadTexture();
+    //gWorld.texture = LoadTexture();
 
     // create and bind VAO
     glGenVertexArrays(1, &gWorld.vao);

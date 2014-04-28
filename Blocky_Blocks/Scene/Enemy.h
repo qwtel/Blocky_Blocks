@@ -15,7 +15,7 @@ using namespace glm;
 class Enemy : public Player
 {
 public:
-    Enemy(ModelAsset* ma, float time, Player* of, std::list<Bullet*>* bullets);
+    Enemy(ModelAsset* ma, float time, Player* of, std::list<Bullet*>* bullets, Material* mat);
     virtual ~Enemy(void);
 
     virtual void update(float t, float deltaT);
