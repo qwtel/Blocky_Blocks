@@ -9,7 +9,11 @@ using namespace glm;
 struct ModelAsset {
     Program* program;
     Texture2* texture;
-    GLuint vbo;
+    GLuint positionBuffer;
+    GLuint normalBuffer;
+    GLuint indexBuffer;
+    GLuint uvBuffer;
+    //GLuint vbo;
     GLuint vao;
     GLenum drawType;
     GLint drawStart;
