@@ -110,22 +110,22 @@
     <ClInclude Include="Scene\Camera.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Shader\fragmentshader.frag" />
+    <Text Include="Assets\Shader\fragmentshader.frag" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Models\cube.model" />
-    <None Include="Models\world.model" />
-    <None Include="Shader\cameraVertexShader.vert" />
-    <None Include="Shader\lightingFragmentShader.frag" />
-    <None Include="Shader\lightingVertexShader.vert" />
-    <None Include="Shader\textureFragmentShader.frag" />
-    <None Include="Shader\textureVertexShader.vert" />
-    <None Include="Shader\vertexshader.vert" />
+    <None Include="Assets\Models\cube.model" />
+    <None Include="Assets\Models\world.model" />
+    <None Include="Assets\Shader\cameraVertexShader.vert" />
+    <None Include="Assets\Shader\lightingFragmentShader.frag" />
+    <None Include="Assets\Shader\lightingVertexShader.vert" />
+    <None Include="Assets\Shader\textureFragmentShader.frag" />
+    <None Include="Assets\Shader\textureVertexShader.vert" />
+    <None Include="Assets\Shader\vertexshader.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Texture\block.png" />
-    <Image Include="Texture\hazard.png" />
-    <Image Include="Texture\wooden-crate.jpg" />
+    <Image Include="Assets\Texture\hazard.png" />
+    <Image Include="Assets\Texture\wooden-crate.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

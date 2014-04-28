@@ -85,27 +85,27 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Shader\fragmentshader.frag" />
+    <None Include="Assets\Shader\cameraVertexShader.vert" />
+    <None Include="Assets\Shader\lightingFragmentShader.frag" />
+    <None Include="Assets\Shader\lightingVertexShader.vert" />
+    <None Include="Assets\Shader\textureFragmentShader.frag" />
+    <None Include="Assets\Shader\textureVertexShader.vert" />
+    <None Include="Assets\Shader\vertexshader.vert" />
+    <None Include="Assets\Models\cube.model" />
+    <None Include="Assets\Models\world.model" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shader\vertexshader.vert" />
-    <None Include="Shader\textureFragmentShader.frag" />
-    <None Include="Shader\textureVertexShader.vert" />
-    <None Include="Shader\cameraVertexShader.vert" />
-    <None Include="Shader\lightingVertexShader.vert" />
-    <None Include="Shader\lightingFragmentShader.frag" />
-    <None Include="Models\cube.model" />
-    <None Include="Models\world.model" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Texture\hazard.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="Texture\wooden-crate.jpg">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="Texture\block.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="Assets\Texture\hazard.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\Texture\wooden-crate.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Assets\Shader\fragmentshader.frag" />
   </ItemGroup>
 </Project>

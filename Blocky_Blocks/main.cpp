@@ -43,7 +43,6 @@ std::list<ModelInstance> gInstances;
 //GLfloat gDegreesRotated = 0.0f;
 Light gLight;
 Player* player;
-Bullet* bullet;
 std::list<Bullet*> bullets;
 std::list<Enemy*> enemies;
 
@@ -71,6 +70,10 @@ static void ImportScene(const std::string& pFile);
 static void LoadWorld();
 static void CreateWorldInstance();
 
+static const std::string Assets(const std::string& path) {
+    return "Assets/" + path;
+}
+
 int main() 
 {
     // (1) init everything you need
@@ -83,7 +86,7 @@ int main()
     double lastTime = 0;
 
     //import cube from file
-    ImportScene("Models/cube.model"); 
+    ImportScene(Assets("Models/cube.model")); 
 
     // initialise the gWoodenCrate asset
     LoadWoodenCrateAsset();
@@ -91,7 +94,7 @@ int main()
     //CreateInstances();
 
     //initialise world
-    ImportScene("Models/world.model");
+    ImportScene(Assets("Models/world.model"));
     LoadWorld();
     CreateWorldInstance();
 
@@ -105,9 +108,6 @@ int main()
         Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets);
         enemies.push_back(enemy);
     }
-
-    // XXX: Remove this
-    bullet = nullptr;
 
     //camera->setPosition(vec3(0,0,4));
     camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
@@ -350,7 +350,7 @@ GLFWwindow* openWindow(int width, int height)
 
 static Texture2* LoadTexture()
 {
-    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile("Texture/noise.png");
+    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile(Assets("Texture/noise.png"));
     //bmp.flipVertically();
     return new Texture2(bmp);
 }
@@ -388,7 +388,6 @@ static void LoadWoodenCrateAsset()
     glGenBuffers(1, &gWoodenCrate.indexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[0]->numIndices * sizeof(unsigned int), meshes[0]->indices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
 
     // unbind the VAO
     glBindVertexArray(0);
@@ -397,8 +396,8 @@ static void LoadWoodenCrateAsset()
 }
 
 static Program* LoadShaders() {
-    Shader* vertexShader = new Shader("Shader/lightingVertexShader.vert", GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader("Shader/lightingFragmentshader.frag", GL_FRAGMENT_SHADER);
+    Shader* vertexShader = new Shader(Assets("Shader/lightingVertexShader.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/lightingFragmentshader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
@@ -429,7 +428,7 @@ static void CreateInstances() {
     gInstances.push_back(hMid);
 }
 
-static void ImportScene(const std::string& pFile){
+static void ImportScene(const std::string& pFile) {
 
     importer = new Assimp::Importer();
     const aiScene* scene = importer->ReadFile(pFile,
@@ -494,7 +493,6 @@ static void LoadWorld()
     glGenBuffers(1, &gWorld.indexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWorld.indexBuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[1]->numIndices * sizeof(unsigned int), meshes[1]->indices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWorld.indexBuffer);
 
     // unbind the VAO
     glBindVertexArray(0);
