@@ -14,7 +14,8 @@ static const vec3 LeftRotate = -ZAxis;
 static const vec3 Right = -Left;
 static const vec3 RightRotate = -LeftRotate;
 
-static const float MaxVerticalAngle = 85.0f;
+static const float MinVerticalAngle = -25.0f;
+static const float MaxVerticalAngle = 65.0f;
 
 Player::Player(ModelAsset* ma) :
     _position(vec3()),
@@ -155,8 +156,8 @@ void Player::offsetLookAngle(float upAngle, float rightAngle)
 
     if(_verticalAngle > MaxVerticalAngle)
         _verticalAngle = MaxVerticalAngle;
-    else if(_verticalAngle < -MaxVerticalAngle)
-        _verticalAngle = -MaxVerticalAngle;
+    else if(_verticalAngle < MinVerticalAngle)
+        _verticalAngle = MinVerticalAngle;
 }
 
 void Player::setLookAngle(float upAngle, float rightAngle)
