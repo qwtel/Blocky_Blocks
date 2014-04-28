@@ -13,7 +13,7 @@ struct ModelAsset {
     GLuint normalBuffer;
     GLuint indexBuffer;
     GLuint uvBuffer;
-    //GLuint vbo;
+    GLuint vbo;
     GLuint vao;
     GLenum drawType;
     GLint drawStart;

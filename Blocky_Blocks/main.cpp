@@ -266,7 +266,12 @@ void DrawInstance(const ModelInstance& inst)
     glUniform3f(program->uniform("color"), inst.color.r, inst.color.g, inst.color.b);
     glUniform1i(program->uniform("tex"), 0);
 
-    glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
+    if(asset->drawCount <= 36){
+        glDrawArrays(asset->drawType, asset->drawStart, asset->drawCount);
+    }
+    else{
+        glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
+    }
 
     // unbind vao and texture
     glBindVertexArray(0);
@@ -362,37 +367,83 @@ static void LoadWoodenCrateAsset()
     gWoodenCrate.drawStart = 0;
     gWoodenCrate.drawCount = 6*2*3;
     gWoodenCrate.texture = LoadTexture();
-
-    // create and bind VAO
+    glGenBuffers(1, &gWoodenCrate.vbo);
     glGenVertexArrays(1, &gWoodenCrate.vao);
+
+    // bind the VAO
     glBindVertexArray(gWoodenCrate.vao);
 
-    glGenBuffers(1, &gWoodenCrate.positionBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.positionBuffer);
-    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->vertices, GL_STATIC_DRAW);
+    // bind the VBO
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.vbo);
+
+    // TODO: Load vertexData from file
+    // Make a cube out of triangles (two triangles per side)
+    GLfloat vertexData[] = {
+        //  X     Y     Z       U     V          Normal
+        // bottom
+        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
+        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
+
+        // top
+        -1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
+
+        // front
+        -1.0f,-1.0f, 1.0f,   1.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+        1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+        1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
+
+        // back
+        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
+        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+        1.0f, 1.0f,-1.0f,   1.0f, 1.0f,   0.0f, 0.0f, -1.0f,
+
+        // left
+        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
+
+        // right
+        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
+        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f
+    };
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
+
+    // connect the xyz to the "vert" attribute of the vertex shader
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vert"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), NULL);
 
-    glGenBuffers(1, &gWoodenCrate.normalBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.normalBuffer);
-    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->normals, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertNormal"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
-
-    glGenBuffers(1, &gWoodenCrate.uvBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.uvBuffer);
-    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 2 * sizeof(float), meshes[0]->textureCoords, GL_STATIC_DRAW);
+    // connect the uv coords to the "vertTexCoord" attribute of the vertex shader
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertTexCoord"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  0, 0);
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_TRUE,  8*sizeof(GLfloat), (const GLvoid*)(3 * sizeof(GLfloat)));
 
-    glGenBuffers(1, &gWoodenCrate.indexBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[0]->numIndices * sizeof(unsigned int), meshes[0]->indices, GL_STATIC_DRAW);
+    // connect the normal to the "vertNormal" attribute of the vertex shader
+    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertNormal"));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_TRUE,  8*sizeof(GLfloat), (const GLvoid*)(5 * sizeof(GLfloat)));
 
     // unbind the VAO
     glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 static Program* LoadShaders() {
