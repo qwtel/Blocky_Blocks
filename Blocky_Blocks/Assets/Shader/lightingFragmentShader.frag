@@ -2,13 +2,13 @@
 
 uniform mat4 model;
 uniform sampler2D tex;
+uniform vec3 cameraPosition;
 
 uniform struct Light {
 	vec3 position;
 	vec3 intensities;
 	float attenuation;
 	float ambientCoefficient;
-	vec3 cameraPosition;
 } light;
 
 uniform struct Material {
@@ -28,7 +28,7 @@ void main() {
 	vec3 surfacePos = vec3(model * vec4(fragVert, 1));
 	vec4 surfaceColor = vec4((material.color / 255.0), 1) * texture(tex, fragTexCoord);
 	vec3 surfaceToLight = normalize(light.position - surfacePos);
-	vec3 surfaceToCamera = normalize(light.cameraPosition - surfacePos);
+	vec3 surfaceToCamera = normalize(cameraPosition - surfacePos);
 
 	//ambient
 	vec3 ambient = light.ambientCoefficient * (surfaceColor.rgb * light.intensities);

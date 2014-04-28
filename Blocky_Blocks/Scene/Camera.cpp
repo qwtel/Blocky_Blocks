@@ -8,7 +8,7 @@ Camera::Camera(Player* player) :
     _fieldOfView(50.0f), 
     _viewportAspectRatio(4.0f/3.0f), 
     _nearPlane(0.1f), 
-    _farPlane(200.0f)
+    _farPlane(300.0f)
 {
 }
 

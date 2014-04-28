@@ -113,14 +113,15 @@ int main()
     camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
 
     gLight.position = camera->position();
-    gLight.intensities = vec3(1,1,1);
-    gLight.attenuation = 0.002f;
+    gLight.position.y = gLight.position.y + 15.0f;
+    gLight.intensities = vec3(1, 1, 1) * 0.9f;
+    gLight.attenuation = 0.0005f;
     gLight.ambientCoefficient = 0.75f;
 
     while (running && !glfwWindowShouldClose(window))
     {
         // (2) clear the frame and depth buffer
-        vec3 bg = vec3(182,148,233) / 255.0f;
+        vec3 bg = vec3(225,209,244) / 255.0f;
         glClearColor(bg.r, bg.g, bg.b, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -265,7 +266,7 @@ void DrawInstance(const ModelInstance& inst)
     glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera->matrix()));
     glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, glm::value_ptr(inst.transform));
 
-    glUniform3fv(program->uniform("light.cameraPosition"), 1, glm::value_ptr(camera->position()));
+    glUniform3fv(program->uniform("cameraPosition"), 1, glm::value_ptr(camera->position()));
 
     glUniform3fv(program->uniform("light.position"), 1, glm::value_ptr(gLight.position));
     glUniform3fv(program->uniform("light.intensities"), 1, glm::value_ptr(gLight.intensities));
@@ -297,7 +298,7 @@ void DrawInstance(const ModelInstance& inst)
 void cleanup()
 {
     glDeleteVertexArrays(1, &gWoodenCrate.vao);
-    //glDeleteVertexArrays(1, &gWoodenCrate.vbo);
+    glDeleteVertexArrays(1, &gWoodenCrate.vbo);
     glDeleteBuffers(1, &positionBuffer);
     glDeleteBuffers(1, &indexBuffer);
     glDeleteBuffers(1, &normalBuffer);
@@ -368,7 +369,7 @@ GLFWwindow* openWindow(int width, int height)
 static Texture2* LoadTexture()
 {
     tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile(Assets("Texture/noise.png"));
-    //bmp.flipVertically();
+    bmp.flipVertically();
     return new Texture2(bmp);
 }
 
@@ -378,7 +379,6 @@ static void LoadWoodenCrateAsset()
     gWoodenCrate.drawType = GL_TRIANGLES;
     gWoodenCrate.drawStart = 0;
     gWoodenCrate.drawCount = 6*2*3;
-    //gWoodenCrate.texture = LoadTexture();
     glGenBuffers(1, &gWoodenCrate.vbo);
     glGenVertexArrays(1, &gWoodenCrate.vao);
 
@@ -532,7 +532,7 @@ static void CreateWorldInstance()
     ModelInstance world;
     world.asset = &gWorld;
     world.transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(3, 1.5, 3));
-    Material* m = GiveMaterial(vec3(182,148,233));
+    Material* m = GiveMaterial(vec3(192,158,233));
     //world.color = vec3(182,148,233);
     world.material = m;
     gInstances.push_back(world);
