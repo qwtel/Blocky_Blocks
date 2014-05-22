@@ -14,6 +14,8 @@
 #include <assimp/postprocess.h>
 #include <vector>
 
+#include <bullet/btBulletDynamicsCommon.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -93,9 +95,27 @@ int main()
     //CreateInstances();
 
     //initialise world
-    ImportScene(Assets("Models/world.model"));
+    ImportScene(Assets("Models/world.obj"));
     LoadWorld();
     CreateWorldInstance();
+
+     //initialise bullet
+    // Build the broadphase
+    btBroadphaseInterface* broadphase = new btDbvtBroadphase();
+
+    // Set up the collision configuration and dispatcher
+    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
+    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
+
+    // The actual physics solver
+    btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver;
+
+    // The world.
+    btDiscreteDynamicsWorld* dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
+    //dynamicsWorld->setGravity(btVector3(0,-9.81f,0));;
+
+    //collisionshapes
+    btCollisionShape* cubeShape = new btBoxShape(btVector3(1.0f,1.0f,1.0f));
 
     player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219),"Texture/noise.png"));
     camera = new Camera(player);
@@ -107,7 +127,7 @@ int main()
         Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets, GiveMaterial(vec3(255,153,153),"Texture/noise.png"));
         enemies.push_back(enemy);
     }
-    
+
     //camera->setPosition(vec3(0,0,4));
     camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
 
@@ -490,7 +510,7 @@ static void CreateWorldInstance()
     ModelInstance world;
     world.asset = &gWorld;
     world.transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(1, 1, 1));
-    Material* m = GiveMaterial(vec3(192,158,233),"Texture/tilewall10.jpg");
+    Material* m = GiveMaterial(vec3(192,158,233),"Texture/noise.png");
     //world.color = vec3(182,148,233);
     world.material = m;
     gInstances.push_back(world);
