@@ -61,14 +61,13 @@ void DrawInstance(const ModelInstance& inst);
 void cleanup();
 
 static void LoadWoodenCrateAsset();
-static void LoadWorld();
 static Program* LoadShaders();
 static Texture2* LoadTexture();
 static void CreateInstances();
 static void ImportScene(const std::string& pFile);
 static void LoadWorld();
 static void CreateWorldInstance();
-static Material* GiveMaterial(vec3 color);
+static Material* GiveMaterial(vec3 color, string texPath);
 
 static const std::string Assets(const std::string& path) {
     return "Assets/" + path;
@@ -98,14 +97,14 @@ int main()
     LoadWorld();
     CreateWorldInstance();
 
-    player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219)));
+    player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219),"Texture/noise.png"));
     camera = new Camera(player);
     //player->setCamera(camera);
 
     double time = glfwGetTime();
     static const int NumEnemies = 10;
     for (int i = 0; i < NumEnemies; i++) {
-        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets, GiveMaterial(vec3(255,153,153)));
+        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets, GiveMaterial(vec3(255,153,153),"Texture/noise.png"));
         enemies.push_back(enemy);
     }
 
@@ -279,12 +278,9 @@ void DrawInstance(const ModelInstance& inst)
 
     glUniform1i(program->uniform("tex"), 0);
 
-    if(asset->drawCount <= 36){
-        glDrawArrays(asset->drawType, asset->drawStart, asset->drawCount);
-    }
-    else{
-        glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
-    }
+
+    glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
+
 
     // unbind vao and texture
     glBindVertexArray(0);
@@ -378,84 +374,39 @@ static void LoadWoodenCrateAsset()
     gWoodenCrate.program = LoadShaders();
     gWoodenCrate.drawType = GL_TRIANGLES;
     gWoodenCrate.drawStart = 0;
-    gWoodenCrate.drawCount = 6*2*3;
-    glGenBuffers(1, &gWoodenCrate.vbo);
-    glGenVertexArrays(1, &gWoodenCrate.vao);
+    gWoodenCrate.drawCount = meshes[0]->numIndices;
+    //gWorld.texture = LoadTexture();
 
-    // bind the VAO
+    // create and bind VAO
+    glGenVertexArrays(1, &gWoodenCrate.vao);
     glBindVertexArray(gWoodenCrate.vao);
 
-    // bind the VBO
-    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.vbo);
-
-    // TODO: Load vertexData from file
-    // Make a cube out of triangles (two triangles per side)
-    GLfloat vertexData[] = {
-        //  X     Y     Z       U     V          Normal
-        // bottom
-        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-
-        // top
-        -1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-
-        // front
-        -1.0f,-1.0f, 1.0f,   1.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-        1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-        1.0f,-1.0f, 1.0f,   0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-
-        // back
-        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-        -1.0f, 1.0f,-1.0f,   0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-        1.0f, 1.0f,-1.0f,   1.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-
-        // left
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f,-1.0f,-1.0f,   0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f,-1.0f, 1.0f,   0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f, 1.0f,   1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f,-1.0f,   1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-
-        // right
-        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-        1.0f,-1.0f,-1.0f,   1.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-        1.0f,-1.0f, 1.0f,   1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f,-1.0f,   0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-        1.0f, 1.0f, 1.0f,   0.0f, 1.0f,   1.0f, 0.0f, 0.0f
-    };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
-
-    // connect the xyz to the "vert" attribute of the vertex shader
+    glGenBuffers(1, &gWoodenCrate.positionBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.positionBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->vertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vert"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 8*sizeof(GLfloat), NULL);
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    // connect the uv coords to the "vertTexCoord" attribute of the vertex shader
-    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertTexCoord"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_TRUE,  8*sizeof(GLfloat), (const GLvoid*)(3 * sizeof(GLfloat)));
-
-    // connect the normal to the "vertNormal" attribute of the vertex shader
+    glGenBuffers(1, &gWoodenCrate.normalBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.normalBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->normals, GL_STATIC_DRAW);
     glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertNormal"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_TRUE,  8*sizeof(GLfloat), (const GLvoid*)(5 * sizeof(GLfloat)));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+    glGenBuffers(1, &gWoodenCrate.uvBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.uvBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->textureCoords, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertTexCoord"));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  3*sizeof(float), 0);
+
+    glGenBuffers(1, &gWoodenCrate.indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[0]->numIndices * sizeof(unsigned int), meshes[0]->indices, GL_STATIC_DRAW);
 
     // unbind the VAO
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 static Program* LoadShaders() {
@@ -464,20 +415,26 @@ static Program* LoadShaders() {
     return new Program(vertexShader, fragmentShader);
 }
 
-static Material* GiveMaterial(vec3 color)
+static Material* GiveMaterial(vec3 color, string texPath)
 {
+
+    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile(Assets(texPath));
+    bmp.flipVertically();
+    Texture2* tex = new Texture2(bmp);
+
     Material* m = new Material();
-    m->texture = LoadTexture();
+    m->texture = tex;
     m->color = color;
     m->shininess = 80.0f;
     m->specularColor = vec3(1,1,1);
     return m;
 }
 
+
 static void CreateInstances() {
     vec3 color = vec3(132,213,219);
 
-    Material* m = GiveMaterial(color);
+    Material* m = GiveMaterial(color,"Texture/noise.png");
 
     ModelInstance i;
     i.asset = &gWoodenCrate;
@@ -512,7 +469,8 @@ static void ImportScene(const std::string& pFile) {
         aiProcess_GenSmoothNormals          |
         aiProcess_JoinIdenticalVertices     |
         aiProcess_ImproveCacheLocality      |
-        aiProcess_SortByPType);
+        aiProcess_SortByPType               |
+        aiProcess_FlipUVs);
 
     for(unsigned int i = 0; i < scene->mNumMeshes; i++)
     {
@@ -531,8 +489,8 @@ static void CreateWorldInstance()
 {
     ModelInstance world;
     world.asset = &gWorld;
-    world.transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(3, 1.5, 3));
-    Material* m = GiveMaterial(vec3(192,158,233));
+    world.transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(1, 1, 1));
+    Material* m = GiveMaterial(vec3(192,158,233),"Texture/tilewall10.jpg");
     //world.color = vec3(182,148,233);
     world.material = m;
     gInstances.push_back(world);
@@ -564,9 +522,9 @@ static void LoadWorld()
 
     glGenBuffers(1, &gWorld.uvBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, gWorld.uvBuffer);
-    glBufferData(GL_ARRAY_BUFFER, meshes[1]->numVertices* 2 * sizeof(float), meshes[1]->textureCoords, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, meshes[1]->numVertices* 3 * sizeof(float), meshes[1]->textureCoords, GL_STATIC_DRAW);
     glEnableVertexAttribArray(gWorld.program->attrib("vertTexCoord"));
-    glVertexAttribPointer(gWorld.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  0, 0);
+    glVertexAttribPointer(gWorld.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  3*sizeof(float), 0);
 
     glGenBuffers(1, &gWorld.indexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWorld.indexBuffer);
