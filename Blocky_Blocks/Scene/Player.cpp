@@ -30,6 +30,14 @@ Player::Player(ModelAsset* ma, Material* mat) :
     asset = ma;
     material = mat;
     transform = mat4();
+
+    btBoxShape* box = new btBoxShape(btVector3(1,1,1));
+    box->setMargin(0.f);
+
+    collisionObject = new btCollisionObject();
+    collisionObject->setUserPointer(this);
+    collisionObject->setCollisionShape(box);
+    collisionObject->getWorldTransform().setFromOpenGLMatrix(glm::value_ptr(transform));
 }
 
 Player::~Player(void)
@@ -63,12 +71,13 @@ void Player::update(float time, float deltaT)
         if (_rotateStart + MoveDuration < time && !_isJumping) { // can't stop while jumping
             _isRotating = false;
 
-			// TODO: this is not correct
+			// TODO: this is not 100% correct
 			_rotateAngle += _rotateDirection * 90.0f;
         } else {
             _offsetPosition(MoveSpeed * deltaT * _moveDirection);
             float x = (time - _rotateStart) / MoveDuration;
             float rotateAngle = 90.0f * x;
+			printf("%f\n", rotateAngle);
             transform = glm::rotate(transform, rotateAngle, _rotateDirection);
         }
     }
@@ -98,6 +107,9 @@ void Player::update(float time, float deltaT)
     transform = glm::rotate(transform, _rotateAngle.y, YAxis); 
     transform = glm::rotate(transform, _rotateAngle.x, XAxis); 
 
+	btTransform temp;
+    temp.setFromOpenGLMatrix(glm::value_ptr(transform));
+    collisionObject->setWorldTransform(temp);
 }
 
 void Player::_move(float time, vec3 direction, vec3 rotateDirection)
@@ -177,7 +189,7 @@ void Player::setLookAngle(float upAngle, float rightAngle)
         _verticalAngle = -MaxVerticalAngle;
 }
 
-void Player::shoot(float time, float deltaT, std::list<Bullet*> *bullets)
+void Player::shoot(float time, float deltaT, std::list<Bullet*> *bullets, btCollisionWorld* collisionWorld)
 {
     static const float ShootDuration = 0.1; // 10 shots per second
 
@@ -187,6 +199,7 @@ void Player::shoot(float time, float deltaT, std::list<Bullet*> *bullets)
         Bullet* blt = new Bullet(asset, material);
         blt->shoot(_position, _horizontalAngle, _verticalAngle, _rotateDirection);
         bullets->push_back(blt);
+        collisionWorld->addCollisionObject(blt->collisionObject);
 
         // todo make player smaller
     }

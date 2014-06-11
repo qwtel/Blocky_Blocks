@@ -25,6 +25,14 @@ Bullet::Bullet(ModelAsset* ma, Material* mat) :
     asset = ma;
     transform = mat4();
     material = mat;
+
+    btBoxShape* box = new btBoxShape(btVector3(1,1,1));
+    box->setMargin(0.f);
+
+    collisionObject = new btCollisionObject();
+    collisionObject->setUserPointer(this);
+    collisionObject->setCollisionShape(box);
+    collisionObject->getWorldTransform().setFromOpenGLMatrix(glm::value_ptr(transform));
 }
 
 
@@ -64,5 +72,9 @@ void Bullet::update(float time, float deltaT)
 
         transform = glm::rotate(transform, _rotateAngle, _rotateDirection);
     }
+
+    btTransform temp;
+    temp.setFromOpenGLMatrix(glm::value_ptr(transform));
+    collisionObject->setWorldTransform(temp);
 
 }

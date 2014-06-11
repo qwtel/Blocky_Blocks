@@ -14,12 +14,13 @@
 #include <assimp/postprocess.h>
 #include <vector>
 
-#include <bullet/btBulletDynamicsCommon.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 using namespace glm;
+
+#include <bullet/btBulletCollisionCommon.h>
 
 #include "External/Bitmap.h"
 #include "Holder/Shader.h"
@@ -56,6 +57,8 @@ Assimp::Importer* importer;
 
 vector<Mesh*> meshes;
 
+btCollisionWorld*	collisionWorld = 0;
+
 GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
 void Draw();
@@ -65,11 +68,11 @@ void cleanup();
 static void LoadWoodenCrateAsset();
 static Program* LoadShaders();
 static Texture2* LoadTexture();
-static void CreateInstances();
 static void ImportScene(const std::string& pFile);
 static void LoadWorld();
 static void CreateWorldInstance();
 static Material* GiveMaterial(vec3 color, string texPath);
+static btTriangleMesh* giveTriangleMesh(const struct aiMesh *pAIMesh);
 
 static const std::string Assets(const std::string& path) {
     return "Assets/" + path;
@@ -91,40 +94,32 @@ int main()
 
     // initialise the gWoodenCrate asset
     LoadWoodenCrateAsset();
-    // create all the instances in the 3D scene based on the gWoodenCrate asset
-    //CreateInstances();
 
-    //initialise world
-    ImportScene(Assets("Models/world.obj"));
-    LoadWorld();
-    CreateWorldInstance();
-
-     //initialise bullet
-    // Build the broadphase
-    btBroadphaseInterface* broadphase = new btDbvtBroadphase();
-
-    // Set up the collision configuration and dispatcher
+    // initialise bullet
     btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
     btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
 
-    // The actual physics solver
-    btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver;
+    // SimpleBroadphase is a brute force alternative, performing N^2 aabb overlap tests
+    btSimpleBroadphase*	broadphase = new btSimpleBroadphase;
 
-    // The world.
-    btDiscreteDynamicsWorld* dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
-    //dynamicsWorld->setGravity(btVector3(0,-9.81f,0));;
+    collisionWorld = new btCollisionWorld(dispatcher, broadphase, collisionConfiguration);
 
-    //collisionshapes
-    btCollisionShape* cubeShape = new btBoxShape(btVector3(1.0f,1.0f,1.0f));
+    // initialise world
+    ImportScene(Assets("Models/world.model"));
+    LoadWorld();
+    CreateWorldInstance();
 
     player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219),"Texture/noise.png"));
+    collisionWorld->addCollisionObject(player->collisionObject);
+
     camera = new Camera(player);
     //player->setCamera(camera);
 
     double time = glfwGetTime();
-    static const int NumEnemies = 10;
+    static const int NumEnemies = 0;
     for (int i = 0; i < NumEnemies; i++) {
-        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets, GiveMaterial(vec3(255,153,153),"Texture/noise.png"));
+        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), collisionWorld);
+		collisionWorld->addCollisionObject(enemy->collisionObject);
         enemies.push_back(enemy);
     }
 
@@ -176,6 +171,29 @@ int main()
 
 void Update(double time, double deltaT) 
 {
+    collisionWorld->performDiscreteCollisionDetection();
+
+    int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
+	for (int i=0;i<numManifolds;i++)
+	{
+		btPersistentManifold* contactManifold =  collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
+		//btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
+		//btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
+
+		int numContacts = contactManifold->getNumContacts();
+		for (int j=0;j<numContacts;j++)
+		{
+			btManifoldPoint& pt = contactManifold->getContactPoint(j);
+			if (pt.getDistance()<0.f)
+			{
+				printf("Contact!!!!!1 1111");
+				const btVector3& ptA = pt.getPositionWorldOnA();
+				const btVector3& ptB = pt.getPositionWorldOnB();
+				const btVector3& normalOnB = pt.m_normalWorldOnB;
+			}
+		}
+	}
+
     float deltaTf = float(deltaT);
     float timef = float(time);
 
@@ -196,7 +214,7 @@ void Update(double time, double deltaT)
     }
 
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
-        player->shoot(timef, deltaTf, &bullets);
+        player->shoot(timef, deltaTf, &bullets, collisionWorld);
     }
 
     // TODO: All these could be in one list
@@ -216,6 +234,7 @@ void Update(double time, double deltaT)
             blt->_posi.x < -100 || blt->_posi.y < -100 || blt->_posi.z < -100)
         {
             bullet_it = bullets.erase(bullet_it);
+            collisionWorld->removeCollisionObject(blt->collisionObject);
             delete blt;
         } else {
             blt->update(timef, deltaTf);
@@ -262,6 +281,7 @@ void Draw()
     }
 
     glUseProgram(0);
+
 }
 
 void DrawInstance(const ModelInstance& inst)
@@ -450,37 +470,6 @@ static Material* GiveMaterial(vec3 color, string texPath)
     return m;
 }
 
-
-static void CreateInstances() {
-    vec3 color = vec3(132,213,219);
-
-    Material* m = GiveMaterial(color,"Texture/noise.png");
-
-    ModelInstance i;
-    i.asset = &gWoodenCrate;
-    i.transform = translate(mat4(), vec3(0,-4,0)) * scale(mat4(), vec3(1,2,1));
-    i.material = m;
-    gInstances.push_back(i);
-
-    ModelInstance hLeft;
-    hLeft.asset = &gWoodenCrate;
-    hLeft.transform = translate(mat4(), vec3(-8,0,0)) * scale(mat4(), vec3(1,6,1));
-    i.material = m;
-    gInstances.push_back(hLeft);
-
-    ModelInstance hRight;
-    hRight.asset = &gWoodenCrate;
-    hRight.transform = translate(mat4(), vec3(-4,0,0)) * scale(mat4(), vec3(1,6,1));
-    i.material = m;
-    gInstances.push_back(hRight);
-
-    ModelInstance hMid;
-    hMid.asset = &gWoodenCrate;
-    hMid.transform = translate(mat4(), vec3(-6,0,0)) * scale(mat4(), vec3(2,1,0.8));
-    i.material = m;
-    gInstances.push_back(hMid);
-}
-
 static void ImportScene(const std::string& pFile) {
 
     importer = new Assimp::Importer();
@@ -494,7 +483,8 @@ static void ImportScene(const std::string& pFile) {
 
     for(unsigned int i = 0; i < scene->mNumMeshes; i++)
     {
-        Mesh* tempMesh = new Mesh(scene->mMeshes[i]->mNumVertices,
+        Mesh* tempMesh = new Mesh(scene->mMeshes[i],
+            scene->mMeshes[i]->mNumVertices,
             scene->mMeshes[i]->mVertices,
             scene->mMeshes[i]->mNormals,
             scene->mMeshes[i]->mNumFaces,
@@ -511,9 +501,52 @@ static void CreateWorldInstance()
     world.asset = &gWorld;
     world.transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(1, 1, 1));
     Material* m = GiveMaterial(vec3(192,158,233),"Texture/noise.png");
-    //world.color = vec3(182,148,233);
-    world.material = m;
+	world.material = m;
+
     gInstances.push_back(world);
+
+    btTriangleMesh* triMesh = giveTriangleMesh(meshes[1]->mesh);
+
+    btCollisionShape* collisionShape = new btBvhTriangleMeshShape(triMesh, false);
+
+    btTransform temp;
+    temp.setFromOpenGLMatrix(glm::value_ptr(world.transform));
+
+    world.collisionObject = new btCollisionObject();
+    world.collisionObject->setUserPointer(&world);
+    world.collisionObject->setCollisionShape(collisionShape);
+    world.collisionObject->setWorldTransform(temp);
+
+
+    collisionWorld->addCollisionObject(world.collisionObject);
+}
+
+static btTriangleMesh* giveTriangleMesh(const struct aiMesh *pAIMesh)
+{
+    btTriangleMesh* triMesh = new btTriangleMesh();
+
+	aiFace *pAIFace;
+    for ( int y = 0; y < pAIMesh->mNumFaces; y++ )
+    {
+        pAIFace = &pAIMesh->mFaces[y];
+
+        if ( pAIFace->mNumIndices != 3 )
+        {
+            continue;
+        }
+
+        aiVector3D v1 = pAIMesh->mVertices[pAIFace->mIndices[0]];
+        aiVector3D v2 = pAIMesh->mVertices[pAIFace->mIndices[1]];
+        aiVector3D v3 = pAIMesh->mVertices[pAIFace->mIndices[2]];
+
+        btVector3 btV1(v1.x,v1.y,v1.z);
+        btVector3 btV2(v2.x,v2.y,v2.z);
+        btVector3 btV3(v3.x,v3.y,v3.z);
+
+        triMesh->addTriangle(btV1,btV2,btV3);
+    }
+
+	return triMesh;
 }
 
 static void LoadWorld()

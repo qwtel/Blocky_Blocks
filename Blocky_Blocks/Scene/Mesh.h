@@ -8,7 +8,7 @@
 class Mesh
 {
 public:
-    Mesh(unsigned int numVertices, aiVector3D* vertices,
+    Mesh(aiMesh* mesh, unsigned int numVertices, aiVector3D* vertices,
         aiVector3D* normals, unsigned int numFaces, aiFace* faces, aiVector3D* textureCoords);
     ~Mesh(void);
 
@@ -19,5 +19,7 @@ public:
 
     GLuint numVertices;
     GLuint numIndices;
+
+    aiMesh* mesh;
 };
 

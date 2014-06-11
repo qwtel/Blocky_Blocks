@@ -3,9 +3,13 @@
 #include <list>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+
 using namespace glm;
+
+#include <bullet/btBulletCollisionCommon.h>
 
 #include "Asset.cpp"
 #include "Bullet.h"
@@ -23,7 +27,7 @@ public:
     virtual void moveForward(float time, float deltaT);
     virtual void moveBackward(float time, float deltaT);
     virtual void jump(float time, float deltaT);
-    virtual void shoot(float time, float deltaT, std::list<Bullet*> *bullets);
+    virtual void shoot(float time, float deltaT, std::list<Bullet*> *bullets, btCollisionWorld* collisionWorld);
 
     virtual void update(float time, float deltaT);
     
@@ -32,8 +36,10 @@ public:
 
     float _horizontalAngle;
     float _verticalAngle;
+
 protected:
     vec3 _position;
+
 private:
     void _offsetPosition(vec3 offset);
     vec3 _rotateAngle;

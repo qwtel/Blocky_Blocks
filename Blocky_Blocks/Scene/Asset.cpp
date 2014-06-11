@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 using namespace glm;
 
+#include <bullet/btBulletCollisionCommon.h>
+
 #include "../Holder/Program.h"
 #include "../Holder/Texture2.h"
 
@@ -35,7 +37,7 @@ struct ModelInstance {
     ModelAsset* asset;
     Material* material;
     mat4 transform;
-    //vec3 color;
+    btCollisionObject* collisionObject;
 };
 
 struct Light {
