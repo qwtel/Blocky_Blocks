@@ -48,8 +48,6 @@ std::list<ModelInstance*> gInstances;
 Light gLight;
 Player* player;
 World* world;
-//std::list<Bullet*> bullets;
-std::list<Enemy*> enemies;
 
 GLuint positionBuffer;
 GLuint normalBuffer;
@@ -66,13 +64,15 @@ GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
 void Draw();
 void DrawInstance(const ModelInstance& inst);
+void DrawInstance2(const ModelInstance& inst);
 void cleanup();
 
 static void LoadWoodenCrateAsset();
 static Program* LoadShaders();
+static Program* LoadShaders2();
 static Texture2* LoadTexture();
 static void ImportScene(const std::string& pFile);
-static void LoadWorld();
+static void LoadWorldAsset();
 static void CreateWorldInstance();
 static Material* GiveMaterial(vec3 color, string texPath);
 static btTriangleMesh* giveTriangleMesh(const struct aiMesh *pAIMesh);
@@ -109,7 +109,7 @@ int main()
 
     // initialise world
     ImportScene(Assets("Models/world.model"));
-    LoadWorld();
+    LoadWorldAsset();
     CreateWorldInstance();
 
     player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219),"Texture/noise.png"), &gInstances, collisionWorld);
@@ -253,16 +253,28 @@ void Update(double time, double deltaT)
 
 void Draw() 
 {
-    // one shader to rule them all...
-    glUseProgram(player->asset->program->object());
-
     std::list<ModelInstance*>::const_iterator it;
+
+	// NOTE: order doesn't matter: visibility depends on z-buffer
+
+	// shader 2
+    glUseProgram(player->asset->program2->object());
+	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+    for(it = gInstances.begin(); it != gInstances.end(); ++it){
+        DrawInstance2(*(*it));
+    }
+
+	// shader 1
+    glUseProgram(player->asset->program->object());
+	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
         DrawInstance(*(*it));
     }
 
+	// clear
     glUseProgram(0);
-
 }
 
 void DrawInstance(const ModelInstance& inst)
@@ -278,13 +290,13 @@ void DrawInstance(const ModelInstance& inst)
     // bind VAO
     glBindVertexArray(asset->vao);
 
-    // bind the texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, material->texture->object());
-
     // set the shader uniforms
     glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera->matrix()));
     glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, glm::value_ptr(inst.transform));
+
+    // bind the texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, material->texture->object());
 
     glUniform3fv(program->uniform("cameraPosition"), 1, glm::value_ptr(camera->position()));
 
@@ -299,7 +311,6 @@ void DrawInstance(const ModelInstance& inst)
 
     glUniform1i(program->uniform("tex"), 0);
 
-
     glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
 
     // unbind vao and texture
@@ -308,13 +319,31 @@ void DrawInstance(const ModelInstance& inst)
 
     // unbind shaders
     // NOTE: since we only have one program we dont need to do this
-    // glUseProgram(0);
+    //glUseProgram(0);
+}
+
+void DrawInstance2(const ModelInstance& inst) 
+{
+    ModelAsset* asset = inst.asset;
+    Program* program = asset->program2;
+
+    // bind VAO
+    glBindVertexArray(asset->vao2);
+
+    // set the shader uniforms
+    glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera->matrix()));
+    glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, glm::value_ptr(inst.transform));
+
+    glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
+
+    // unbind vao and texture
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void cleanup()
 {
     glDeleteVertexArrays(1, &gWoodenCrate.vao);
-    glDeleteVertexArrays(1, &gWoodenCrate.vbo);
     glDeleteBuffers(1, &positionBuffer);
     glDeleteBuffers(1, &indexBuffer);
     glDeleteBuffers(1, &normalBuffer);
@@ -337,7 +366,6 @@ GLFWwindow* openWindow(int width, int height)
         system("PAUSE");
         exit(-1);
     }
-
 
     // (2) set window hints
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -387,49 +415,15 @@ static Texture2* LoadTexture()
     return new Texture2(bmp);
 }
 
-static void LoadWoodenCrateAsset()
-{
-    gWoodenCrate.program = LoadShaders();
-    gWoodenCrate.drawType = GL_TRIANGLES;
-    gWoodenCrate.drawStart = 0;
-    gWoodenCrate.drawCount = meshes[0]->numIndices;
-    //gWorld.texture = LoadTexture();
-
-    // create and bind VAO
-    glGenVertexArrays(1, &gWoodenCrate.vao);
-    glBindVertexArray(gWoodenCrate.vao);
-
-    glGenBuffers(1, &gWoodenCrate.positionBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.positionBuffer);
-    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->vertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vert"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glGenBuffers(1, &gWoodenCrate.normalBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.normalBuffer);
-    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->normals, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertNormal"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
-
-    glGenBuffers(1, &gWoodenCrate.uvBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.uvBuffer);
-    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->textureCoords, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertTexCoord"));
-    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  3*sizeof(float), 0);
-
-    glGenBuffers(1, &gWoodenCrate.indexBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[0]->numIndices * sizeof(unsigned int), meshes[0]->indices, GL_STATIC_DRAW);
-
-    // unbind the VAO
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
 static Program* LoadShaders() {
     Shader* vertexShader = new Shader(Assets("Shader/lightingVertexShader.vert").c_str(), GL_VERTEX_SHADER);
     Shader* fragmentShader = new Shader(Assets("Shader/celShader.frag").c_str(), GL_FRAGMENT_SHADER);
+    return new Program(vertexShader, fragmentShader);
+}
+
+static Program* LoadShaders2() {
+    Shader* vertexShader = new Shader(Assets("Shader/vertexshader.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/fragmentshader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
@@ -507,9 +501,65 @@ static btTriangleMesh* giveTriangleMesh(const struct aiMesh *pAIMesh)
     return triMesh;
 }
 
-static void LoadWorld()
+static void LoadWoodenCrateAsset()
+{
+    gWoodenCrate.program = LoadShaders();
+    gWoodenCrate.program2 = LoadShaders2();
+    gWoodenCrate.drawType = GL_TRIANGLES;
+    gWoodenCrate.drawStart = 0;
+    gWoodenCrate.drawCount = meshes[0]->numIndices;
+
+    // create and bind VAO
+    glGenVertexArrays(1, &gWoodenCrate.vao);
+    glBindVertexArray(gWoodenCrate.vao);
+
+    glGenBuffers(1, &gWoodenCrate.indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[0]->numIndices * sizeof(unsigned int), meshes[0]->indices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &gWoodenCrate.positionBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.positionBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vert"));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glGenBuffers(1, &gWoodenCrate.normalBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.normalBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->normals, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertNormal"));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+    glGenBuffers(1, &gWoodenCrate.uvBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.uvBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[0]->numVertices* 3 * sizeof(float), meshes[0]->textureCoords, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertTexCoord"));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  3*sizeof(float), 0);
+
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // create and bind VAO
+    glGenVertexArrays(1, &gWoodenCrate.vao2);
+    glBindVertexArray(gWoodenCrate.vao2);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.positionBuffer);
+    glEnableVertexAttribArray(gWoodenCrate.program2->attrib("vert"));
+    glVertexAttribPointer(gWoodenCrate.program2->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+static void LoadWorldAsset()
 {
     gWorld.program = LoadShaders();
+    gWorld.program2 = LoadShaders2();
     gWorld.drawType = GL_TRIANGLES;
     gWorld.drawStart = 0;
     gWorld.drawCount = meshes[1]->numIndices;
@@ -517,6 +567,10 @@ static void LoadWorld()
     // create and bind VAO
     glGenVertexArrays(1, &gWorld.vao);
     glBindVertexArray(gWorld.vao);
+
+    glGenBuffers(1, &gWorld.indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWorld.indexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[1]->numIndices * sizeof(unsigned int), meshes[1]->indices, GL_STATIC_DRAW);
 
     glGenBuffers(1, &gWorld.positionBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, gWorld.positionBuffer);
@@ -536,9 +590,20 @@ static void LoadWorld()
     glEnableVertexAttribArray(gWorld.program->attrib("vertTexCoord"));
     glVertexAttribPointer(gWorld.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  3*sizeof(float), 0);
 
-    glGenBuffers(1, &gWorld.indexBuffer);
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // create and bind VAO
+    glGenVertexArrays(1, &gWorld.vao2);
+    glBindVertexArray(gWorld.vao2);
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWorld.indexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[1]->numIndices * sizeof(unsigned int), meshes[1]->indices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWorld.positionBuffer);
+    glEnableVertexAttribArray(gWorld.program2->attrib("vert"));
+    glVertexAttribPointer(gWorld.program2->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     // unbind the VAO
     glBindVertexArray(0);

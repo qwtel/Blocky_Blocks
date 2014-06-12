@@ -24,9 +24,13 @@ in vec2 fragTexCoord;
 out vec4 finalColor;
 
 const float A = 0.1;
-const float B = 0.3;
-const float C = 0.6;
-const float D = 1.0;
+const float B = 0.15;
+const float C = 0.3;
+const float D = 0.45;
+const float E = 0.6;
+const float F = 0.75;
+const float G = 0.9;
+const float H = 1.0;
 
 void main() {
 	vec3 normal = normalize(transpose(inverse(mat3(model))) * fragNormal);
@@ -44,7 +48,11 @@ void main() {
 	if (diffuseCoefficient < A) diffuseCoefficient = 0.0;
 	else if (diffuseCoefficient < B) diffuseCoefficient = B;
 	else if (diffuseCoefficient < C) diffuseCoefficient = C;
-	else diffuseCoefficient = D;
+	else if (diffuseCoefficient < D) diffuseCoefficient = D;
+	else if (diffuseCoefficient < E) diffuseCoefficient = E;
+	else if (diffuseCoefficient < F) diffuseCoefficient = F;
+	else if (diffuseCoefficient < G) diffuseCoefficient = G;
+	else diffuseCoefficient = H;
 
 	vec3 diffuse = diffuseCoefficient * (surfaceColor.rgb * light.intensities);
 

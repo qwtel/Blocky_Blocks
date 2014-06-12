@@ -12,16 +12,15 @@ using namespace glm;
 
 struct ModelAsset {
     Program* program;
-    //Texture2* texture;
+    Program* program2;
 
     GLuint vao;
+    GLuint vao2;
+
     GLuint positionBuffer;
     GLuint normalBuffer;
     GLuint indexBuffer;
     GLuint uvBuffer;
-
-    // TODO: Remove this
-    GLuint vbo;
 
     GLenum drawType;
     GLint drawStart;
