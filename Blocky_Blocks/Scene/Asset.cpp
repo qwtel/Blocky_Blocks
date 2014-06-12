@@ -53,7 +53,7 @@ struct ModelInstance {
     };
 
     virtual void update(float time, float deltaT) = 0;
-    virtual void collide(ModelInstance* other) = 0;
+    virtual void collide(ModelInstance* other, vec3 pA, vec3 pB) = 0;
 
     virtual void markDeleted() { _deathMark = true; };
     virtual bool isMarkedDeleted() { return _deathMark; };

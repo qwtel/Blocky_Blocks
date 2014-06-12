@@ -117,7 +117,7 @@ int main()
     camera = new Camera(player);
 
     double time = glfwGetTime();
-    static const int NumEnemies = 10;
+    static const int NumEnemies = 0;
     for (int i = 0; i < NumEnemies; i++) {
         Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
     }
@@ -173,6 +173,36 @@ void Update(double time, double deltaT)
     float deltaTf = float(deltaT);
     float timef = float(time);
 
+    collisionWorld->performDiscreteCollisionDetection();
+
+    int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
+    for (int i=0;i<numManifolds;i++)
+    {
+        btPersistentManifold* contactManifold =  collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
+        const btCollisionObject* obA = contactManifold->getBody0();
+        const btCollisionObject* obB = contactManifold->getBody1();
+        ModelInstance* pA = (ModelInstance*) obA->getUserPointer();
+        ModelInstance* pB = (ModelInstance*) obB->getUserPointer();
+
+        int numContacts = contactManifold->getNumContacts();
+        for (int j=0;j<numContacts;j++)
+        {
+            btManifoldPoint& pt = contactManifold->getContactPoint(j);
+            if (pt.getDistance() < 0.f)
+            {
+                const btVector3& ptA = pt.getPositionWorldOnA();
+                const btVector3& ptB = pt.getPositionWorldOnB();
+                //const btVector3& normalOnB = pt.m_normalWorldOnB;
+
+				vec3 pointA = vec3(ptA.getX(), ptA.getY(), ptA.getZ());
+				vec3 pointB = vec3(ptB.getX(), ptB.getY(), ptB.getZ());
+
+                pA->collide(pB, pointA, pointB);
+                pB->collide(pA, pointB, pointA);
+            }
+        }
+    }
+
     if(glfwGetKey(window, 'S')){
         player->moveBackward(timef, deltaTf);
     } else if(glfwGetKey(window, 'W')){
@@ -193,7 +223,6 @@ void Update(double time, double deltaT)
         player->shoot(timef, deltaTf);
     }
 
-    // since enemies can shoot, update them before the bullets 
     std::list<ModelInstance*>::const_iterator it;
     for(it = gInstances.begin(); it != gInstances.end();) {
         ModelInstance* instance = *it;
@@ -219,32 +248,6 @@ void Update(double time, double deltaT)
 
     camera->offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
 
-    collisionWorld->performDiscreteCollisionDetection();
-
-    int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
-    for (int i=0;i<numManifolds;i++)
-    {
-        btPersistentManifold* contactManifold =  collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
-        const btCollisionObject* obA = contactManifold->getBody0();
-        const btCollisionObject* obB = contactManifold->getBody1();
-        ModelInstance* pA = (ModelInstance*) obA->getUserPointer();
-        ModelInstance* pB = (ModelInstance*) obB->getUserPointer();
-
-        int numContacts = contactManifold->getNumContacts();
-        for (int j=0;j<numContacts;j++)
-        {
-            btManifoldPoint& pt = contactManifold->getContactPoint(j);
-            if (pt.getDistance() < 0.f)
-            {
-                pA->collide(pB);
-                pB->collide(pA);
-                //const btVector3& ptA = pt.getPositionWorldOnA();
-                //const btVector3& ptB = pt.getPositionWorldOnB();
-                //const btVector3& normalOnB = pt.m_normalWorldOnB;
-            }
-        }
-    }
-
     glfwSetCursorPos(window, CENTER.x, CENTER.y); //reset the mouse, so it doesn't go out of the window
 }
 
@@ -252,17 +255,6 @@ void Draw()
 {
     // one shader to rule them all...
     glUseProgram(player->asset->program->object());
-
-    // TODO: All these could be in one list
-    //DrawInstance(*player);
-
-    /*
-    std::list<Bullet*>::const_iterator bullet_it;
-    for(bullet_it = bullets.begin(); bullet_it != bullets.end(); ++bullet_it) {
-    Bullet* blt = *bullet_it;
-    DrawInstance(*blt);
-    }
-    */
 
     std::list<ModelInstance*>::const_iterator it;
     for(it = gInstances.begin(); it != gInstances.end(); ++it){

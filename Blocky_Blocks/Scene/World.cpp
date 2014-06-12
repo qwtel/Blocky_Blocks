@@ -26,6 +26,6 @@ World::~World(void)
 {
 }
 
-void World::collide(ModelInstance* other)
+void World::collide(ModelInstance* other, vec3 pA, vec3 pB)
 {
 }

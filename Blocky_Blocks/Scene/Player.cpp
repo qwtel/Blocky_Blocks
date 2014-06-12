@@ -21,21 +21,30 @@ static const vec3 RightRotate = -LeftRotate;
 static const float MinVerticalAngle = -25.0f;
 static const float MaxVerticalAngle = 65.0f;
 
+static const float MoveSpeed = 8.0; //units per second
+static const float MoveDuration = 0.25; //duration of animation
+
+static const float JumpDuration = 0.5; //duration of animation
+static const float JumpHeight = 3.0f;
+
+static const float FallSpeed = 16.0; //units per second
+
 Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) :
     ModelInstance(instances, collisionWorld),
-    _position(vec3()),
+    _position(vec3(0, 20, 0)),
     _horizontalAngle(0.0f),
     _verticalAngle(0.0f),
     _rotateDirection(),
     _isRotating(false),
     _isColliding(false),
     _isJumping(false),
+    _isFalling(true),
     _shootStart(0.0f),
     _rotateAngle()
 {
     asset = ma;
     material = mat;
-    transform = mat4();
+    transform = glm::translate(mat4(), _position);
 
     btBoxShape* box = new btBoxShape(btVector3(1,1,1));
     box->setMargin(0.f);
@@ -45,7 +54,7 @@ Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instanc
     collisionObject->setCollisionShape(box);
     collisionObject->getWorldTransform().setFromOpenGLMatrix(glm::value_ptr(transform));
 
-	_instances->push_back(this);
+    _instances->push_back(this);
     _collisionWorld->addCollisionObject(collisionObject);
 }
 
@@ -65,38 +74,29 @@ void Player::_offsetPosition(vec3 offset)
 
 void Player::update(float time, float deltaT)
 {
-    static const float MoveSpeed = 8.0; //units per second
-    static const float MoveDuration = 0.25; //duration of animation
-
-    static const float JumpDuration = 0.5; //duration of animation
-    static const float JumpHeight = 3.0f;
+    _time = time;
+    _deltaT = deltaT;
 
     if (_isJumping) {
-        if (_jumpStart + JumpDuration < time) {
-            _isJumping = false;
-            _isRotating = false;
-			_isColliding = false;
-            _position.y = _jumpStartHeight; // XXX
-        } else {
-            float x = (time - _jumpStart) / JumpDuration;
+        float x = (time - _jumpStart) / JumpDuration;
 
-            // change from 0..1 to -1..1, see below
-            x = (x*2) - 1;
+        // change from 0..1 to -1..1, see below
+        x = (x*2) - 1;
 
-            // simpe "jump" function, see: https://www.wolframalpha.com/input/?i=-%28x%5E2%29+%2B+1%29
-            float height = -(x*x) + 1;
+        // simpe "jump" function, see: https://www.wolframalpha.com/input/?i=-%28x%5E2%29+%2B+1%29
+        float height = -(x*x) + 1;
 
-            //printf("f(%f) = %f\n", x, height);
+        //printf("f(%f) = %f\n", x, height);
 
-            _position.y = _jumpStartHeight + height * JumpHeight;
-        }
+        _position.y = _jumpStartHeight + height * JumpHeight;
+    } else if (_isFalling) {
+        _position.y = _position.y - FallSpeed * deltaT;
     }
-
 
     if (_isRotating) {
         if (_rotateStart + MoveDuration < time /*&& !_isJumping*/) {
             _isRotating = false;
-			_isColliding = false;
+            _isColliding = false;
 
             // TODO: this is not correct
             _rotateAngle += _rotateDirection * 90.0f;
@@ -123,13 +123,13 @@ void Player::update(float time, float deltaT)
             // rotate according to the look direction at the start of the rotation
             transform = glm::rotate(transform, _rotateStartHorizontalAngle, vec3(0,1,0));
 
-			// rotate cube around the edge
+            // rotate cube around the edge
             transform = glm::translate(transform, bla);
             transform = glm::rotate(transform, rotateAngle, _rotateDirection);
             transform = glm::translate(transform, -bla);
         }
     } else {
-		transform = glm::translate(mat4(), _position);
+        transform = glm::translate(mat4(), _position);
 
         // rotate according to the look direction
         transform = glm::rotate(transform, _horizontalAngle, vec3(0,1,0));
@@ -184,7 +184,7 @@ void Player::jump(float time, float deltaT)
     if (!_isJumping) {
         _isJumping = true;
         _jumpStart = time;
-        _jumpStartHeight = _position.y;
+        _jumpStartHeight = _position.y + FallSpeed * deltaT;
     }
 }
 
@@ -235,25 +235,33 @@ void Player::shoot(float time, float deltaT)
     }
 }
 
-void Player::collide(ModelInstance* other) {
+void Player::collide(ModelInstance* other, vec3 pA, vec3 pB) {
     if (Player* p = dynamic_cast<Player*>(other)) {
     } else if (Bullet* b = dynamic_cast<Bullet*>(other)) {
-		if (b->_owner != this) {
-			if (dynamic_cast<Enemy*>(this)) {
-				markDeleted();
+        if (b->_owner != this) {
+            if (dynamic_cast<Enemy*>(this)) {
+                markDeleted();
             } else {
-				// gameOver();
+                // gameOver();
             }
         }
     } else if (World* w = dynamic_cast<World*>(other)) {
-		_isColliding = true;
-        _moveDirection = _moveDirection * -1.0f;
-        _rotateDirection = _rotateDirection * -1.0f;
-        _rotateStartPosition = _position;
-        _rotateStartHorizontalAngle = _horizontalAngle;
+		//printf("Is this happening all the time??");
 
+		if(pA.y < pB.y) {
+			_isFalling = false;
+			_isJumping = false;
+        } else {
+			_isColliding = true;
+			_moveDirection = _moveDirection * -1.0f;
+			_rotateDirection = _rotateDirection * -1.0f;
+			_rotateStartPosition = _position;
+			_rotateStartHorizontalAngle = _horizontalAngle;
+        }
+
+        //_position.y = _position.y + FallSpeed * _deltaT;
 
     } else {
-		fprintf(stderr, "Collision with unkown type");
+        fprintf(stderr, "Collision with unkown type");
     }
 }

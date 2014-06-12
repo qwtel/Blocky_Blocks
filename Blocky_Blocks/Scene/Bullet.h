@@ -25,7 +25,7 @@ public:
     Player* _owner;
 
     virtual void update(float time, float deltaT);
-    virtual void collide(ModelInstance* other);
+    virtual void collide(ModelInstance* other, vec3 pA, vec3 pB);
 private:
     vec3 _direction;
     float _velocity;

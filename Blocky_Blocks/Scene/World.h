@@ -17,7 +17,7 @@ class World : public ModelInstance
 public:
     World(ModelAsset* ma, Material* mat, btTriangleMesh* triMesh, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld);
     virtual ~World(void);
-    virtual void collide(ModelInstance* other);
+    virtual void collide(ModelInstance* other, vec3 pA, vec3 pB);
     virtual void update(float a, float b) {};
 private:
 };

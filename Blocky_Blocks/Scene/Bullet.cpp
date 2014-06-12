@@ -92,7 +92,7 @@ void Bullet::update(float time, float deltaT)
     transform = glm::scale(transform, vec3(0.5f));
 }
 
-void Bullet::collide(ModelInstance* other)
+void Bullet::collide(ModelInstance* other, vec3 pA, vec3 pB)
 {
     if (Enemy* e = dynamic_cast<Enemy*>(other)) {
         if (_owner != e) {

@@ -37,7 +37,7 @@ public:
     float _horizontalAngle;
     float _verticalAngle;
 
-    virtual void collide(ModelInstance* other);
+    virtual void collide(ModelInstance* other, vec3 pA, vec3 pB);
 
 protected:
     vec3 _position;
@@ -60,6 +60,8 @@ private:
 
     float _time;
 
+    float _deltaT;
+
     // time when a "move" started
     float _rotateStart;
 
@@ -67,6 +69,8 @@ private:
 
     // true when the the cube is in the air
     bool _isJumping;
+
+    bool _isFalling;
 
     // time when a "jump" started
     float _jumpStart;
