@@ -11,16 +11,21 @@ using namespace glm;
 #include <bullet/btBulletCollisionCommon.h>
 
 #include "Asset.cpp"
+#include "Player.h"
 
 class Bullet : public ModelInstance
 {
 public:
-    Bullet(ModelAsset* ma, Material* mat);
+    Bullet(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld, Player* owner);
     ~Bullet(void);
     vec3 position();
-    void update(float time, float deltaT);
     void shoot(vec3 from, float x, float y, vec3 rotateDirection);
     vec3 _posi;
+
+    Player* _owner;
+
+    virtual void update(float time, float deltaT);
+    virtual void collide(ModelInstance* other);
 private:
     vec3 _direction;
     float _velocity;

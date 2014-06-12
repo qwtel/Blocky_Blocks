@@ -12,15 +12,13 @@ static const int Shootiness = 10;
 // 10 -> will aim at max 10 degrees off target
 static const int Aiminess = 10;
 
-Enemy::Enemy(ModelAsset* ma, float time, Player* of, std::list<Bullet*>* bullets, Material* mat, btCollisionWorld* collisionWorld) : 
-    Player(ma, mat),
+Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) : 
+    Player(ma, mat, instances, collisionWorld),
     _enemy(of),
     _lastMove(time),
-    _waitTime(rand() % 2),
-    _bullets(bullets),
-    _collisionWorld(collisionWorld)
+    _waitTime(rand() % 2)
 {
-    _position = vec3(rand() % 50 + 1, 0, rand() % 50 + 1);
+    _position = vec3(rand() % 50 - 25, 0, rand() % 50 - 25);
     //printf("%f, %f, %f\n", _position.x, _position.y, _position.z);
     //color = vec3(255,153,153);
 }
@@ -54,7 +52,7 @@ void Enemy::update(float time, float deltaT)
 
         bool shouldShoot = rand() % Shootiness == 0;
         if (shouldShoot) {
-            shoot(time, deltaT, _bullets, _collisionWorld);
+            shoot(time, deltaT);
         }
 
         vec3 direction = normalize(_position - _enemy->position());

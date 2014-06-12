@@ -1,5 +1,9 @@
 #include "Bullet.h"
 
+#include "Enemy.h"
+#include "World.h"
+#include "Player.h"
+
 static const vec3 XAxis = vec3(1,0,0);
 static const vec3 YAxis = vec3(0,1,0);
 static const vec3 ZAxis = vec3(0,0,1);
@@ -14,25 +18,30 @@ static const vec3 LeftRotate = -ZAxis;
 static const vec3 Right = -Left;
 static const vec3 RightRotate = -LeftRotate;
 
-Bullet::Bullet(ModelAsset* ma, Material* mat) :
+Bullet::Bullet(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld, Player* owner) :
+    ModelInstance(instances, collisionWorld),
     _posi(),
     _velocity(50.0f), // todo
     _direction(),
-    _rotateAngle()
+    _rotateAngle(),
+    _owner(owner)
 {
     _rotateAngle = rand() % 360 + 1;
     // printf("%f\n", _rotateAngle);
     asset = ma;
-    transform = mat4();
+    transform = glm::scale(mat4(), vec3(0.5));
     material = mat;
 
-    btBoxShape* box = new btBoxShape(btVector3(1,1,1));
+    btBoxShape* box = new btBoxShape(btVector3(0.5,0.5,0.5));
     box->setMargin(0.f);
 
     collisionObject = new btCollisionObject();
     collisionObject->setUserPointer(this);
     collisionObject->setCollisionShape(box);
     collisionObject->getWorldTransform().setFromOpenGLMatrix(glm::value_ptr(transform));
+
+    _instances->push_back(this);
+    _collisionWorld->addCollisionObject(collisionObject);
 }
 
 
@@ -56,10 +65,15 @@ void Bullet::update(float time, float deltaT)
 {
     _posi= _posi + _direction * _velocity * deltaT;
 
+    if (_posi.x >  100 || _posi.y >  100 || _posi.z >  100 ||
+        _posi.x < -100 || _posi.y < -100 || _posi.z < -100)
+    {
+        markDeleted();
+    } 
+
     transform = glm::translate(mat4(), _posi);
     transform = glm::rotate(transform, _horizontalAngle, vec3(0,1,0));
     transform = glm::rotate(transform, _verticalAngle, vec3(1,0,0));
-    transform = glm::scale(transform, vec3(0.5f));
 
     if (_rotateDirection != vec3(0,0,0)) {
         static const float degreePerSecond = 360.0f;
@@ -73,8 +87,26 @@ void Bullet::update(float time, float deltaT)
         transform = glm::rotate(transform, _rotateAngle, _rotateDirection);
     }
 
-    btTransform temp;
-    temp.setFromOpenGLMatrix(glm::value_ptr(transform));
-    collisionObject->setWorldTransform(temp);
+    collisionObject->getWorldTransform().setFromOpenGLMatrix(glm::value_ptr(transform));
 
+    transform = glm::scale(transform, vec3(0.5f));
+}
+
+void Bullet::collide(ModelInstance* other)
+{
+    if (Enemy* e = dynamic_cast<Enemy*>(other)) {
+        if (_owner != e) {
+            markDeleted();
+        }
+    } else if (Player* b = dynamic_cast<Player*>(other)) {
+        if (_owner != b) {
+            markDeleted();
+        }
+    } else if (Bullet* b = dynamic_cast<Bullet*>(other)) {
+        markDeleted();
+    } else if (World* w = dynamic_cast<World*>(other)) {
+        markDeleted();
+    } else {
+        fprintf(stderr, "Collision with unkown type");
+    }
 }

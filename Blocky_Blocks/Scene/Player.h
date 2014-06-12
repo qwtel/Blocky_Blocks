@@ -12,12 +12,11 @@ using namespace glm;
 #include <bullet/btBulletCollisionCommon.h>
 
 #include "Asset.cpp"
-#include "Bullet.h"
 
 class Player : public ModelInstance
 {
 public:
-    Player(ModelAsset* ma, Material* mat);
+    Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld);
 
     virtual ~Player(void);
     virtual vec3 position();
@@ -27,15 +26,18 @@ public:
     virtual void moveForward(float time, float deltaT);
     virtual void moveBackward(float time, float deltaT);
     virtual void jump(float time, float deltaT);
-    virtual void shoot(float time, float deltaT, std::list<Bullet*> *bullets, btCollisionWorld* collisionWorld);
+    virtual void shoot(float time, float deltaT);
 
     virtual void update(float time, float deltaT);
     
     virtual void setLookAngle(float upAngle, float rightAngle);
     virtual void offsetLookAngle(float upAngle, float rightAngle);
 
+    float actualHorizontalAngle;
     float _horizontalAngle;
     float _verticalAngle;
+
+    virtual void collide(ModelInstance* other);
 
 protected:
     vec3 _position;
@@ -71,5 +73,10 @@ private:
     // there is only a limited number of shots allowed per second
     // this is the start time of a shot to enforce the limit
     float _shootStart;
+
+    vec3 _rotateStartPosition;
+    float _rotateStartHorizontalAngle;
+
+    bool _isColliding;
 };
 

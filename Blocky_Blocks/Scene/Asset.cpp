@@ -1,5 +1,7 @@
 #pragma once
 
+#include <list>
+
 #include <glm/glm.hpp>
 using namespace glm;
 
@@ -38,6 +40,30 @@ struct ModelInstance {
     Material* material;
     mat4 transform;
     btCollisionObject* collisionObject;
+
+    ModelInstance(std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) : 
+	_instances(instances),
+	_collisionWorld(collisionWorld) 
+    {
+	_deathMark = false;
+    }
+
+    virtual ~ModelInstance() {
+	_collisionWorld->removeCollisionObject(collisionObject);
+    };
+
+    virtual void update(float time, float deltaT) = 0;
+    virtual void collide(ModelInstance* other) = 0;
+
+    virtual void markDeleted() { _deathMark = true; };
+    virtual bool isMarkedDeleted() { return _deathMark; };
+
+protected:
+    std::list<ModelInstance*>* _instances;
+    btCollisionWorld* _collisionWorld;
+
+private:
+    bool _deathMark;
 };
 
 struct Light {

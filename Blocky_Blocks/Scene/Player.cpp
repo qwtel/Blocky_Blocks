@@ -1,5 +1,9 @@
 #include "Player.h"
 
+#include "Enemy.h"
+#include "World.h"
+#include "Bullet.h"
+
 static const vec3 XAxis = vec3(1,0,0);
 static const vec3 YAxis = vec3(0,1,0);
 static const vec3 ZAxis = vec3(0,0,1);
@@ -17,12 +21,14 @@ static const vec3 RightRotate = -LeftRotate;
 static const float MinVerticalAngle = -25.0f;
 static const float MaxVerticalAngle = 65.0f;
 
-Player::Player(ModelAsset* ma, Material* mat) :
+Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) :
+    ModelInstance(instances, collisionWorld),
     _position(vec3()),
     _horizontalAngle(0.0f),
     _verticalAngle(0.0f),
     _rotateDirection(),
     _isRotating(false),
+    _isColliding(false),
     _isJumping(false),
     _shootStart(0.0f),
     _rotateAngle()
@@ -38,6 +44,9 @@ Player::Player(ModelAsset* ma, Material* mat) :
     collisionObject->setUserPointer(this);
     collisionObject->setCollisionShape(box);
     collisionObject->getWorldTransform().setFromOpenGLMatrix(glm::value_ptr(transform));
+
+	_instances->push_back(this);
+    _collisionWorld->addCollisionObject(collisionObject);
 }
 
 Player::~Player(void)
@@ -62,30 +71,11 @@ void Player::update(float time, float deltaT)
     static const float JumpDuration = 0.5; //duration of animation
     static const float JumpHeight = 3.0f;
 
-    transform = glm::translate(mat4(), _position);
-
-    // rotate according to the look direction
-    transform = glm::rotate(transform, _horizontalAngle, vec3(0,1,0));
-
-    if (_isRotating) {
-        if (_rotateStart + MoveDuration < time && !_isJumping) { // can't stop while jumping
-            _isRotating = false;
-
-			// TODO: this is not 100% correct
-			_rotateAngle += _rotateDirection * 90.0f;
-        } else {
-            _offsetPosition(MoveSpeed * deltaT * _moveDirection);
-            float x = (time - _rotateStart) / MoveDuration;
-            float rotateAngle = 90.0f * x;
-			printf("%f\n", rotateAngle);
-            transform = glm::rotate(transform, rotateAngle, _rotateDirection);
-        }
-    }
-
     if (_isJumping) {
         if (_jumpStart + JumpDuration < time) {
             _isJumping = false;
             _isRotating = false;
+			_isColliding = false;
             _position.y = _jumpStartHeight; // XXX
         } else {
             float x = (time - _jumpStart) / JumpDuration;
@@ -102,14 +92,54 @@ void Player::update(float time, float deltaT)
         }
     }
 
+
+    if (_isRotating) {
+        if (_rotateStart + MoveDuration < time /*&& !_isJumping*/) {
+            _isRotating = false;
+
+            // TODO: this is not correct
+            _rotateAngle += _rotateDirection * 90.0f;
+        } else {
+            _offsetPosition(MoveSpeed * deltaT * _moveDirection);
+            float x = (time - _rotateStart) / MoveDuration;
+            float rotateAngle = 90.0f * x;
+
+            // this is necessary to rotate around the edge of the cube
+            vec3 bla = vec3();
+            if (_rotateDirection == LeftRotate) {
+                bla = vec3(1, -1, 0);
+            } else if (_rotateDirection == RightRotate) {
+                bla = vec3(-1, -1, 0);
+            } else if (_rotateDirection == ForwardRotate) {
+                bla = vec3(0, -1, 1);
+            } else if (_rotateDirection == BackwardRotate) {
+                bla = vec3(0, -1, -1);
+            }
+
+            // translate to the position at the start of the rotation
+            transform = glm::translate(mat4(), vec3(_rotateStartPosition.x , _position.y, _rotateStartPosition.z));
+
+            // rotate according to the look direction at the start of the rotation
+            transform = glm::rotate(transform, _rotateStartHorizontalAngle, vec3(0,1,0));
+
+			// rotate cube around the edge
+            transform = glm::translate(transform, bla);
+            transform = glm::rotate(transform, rotateAngle, _rotateDirection);
+            transform = glm::translate(transform, -bla);
+        }
+    } else if (!_isColliding) {
+        transform = glm::translate(mat4(), _position);
+
+        // rotate according to the look direction
+        transform = glm::rotate(transform, _horizontalAngle, vec3(0,1,0));
+    }
+
     // rotate 90 degree-ish so textures look good
     transform = glm::rotate(transform, _rotateAngle.z, ZAxis); 
     transform = glm::rotate(transform, _rotateAngle.y, YAxis); 
     transform = glm::rotate(transform, _rotateAngle.x, XAxis); 
 
-	btTransform temp;
-    temp.setFromOpenGLMatrix(glm::value_ptr(transform));
-    collisionObject->setWorldTransform(temp);
+    collisionObject->getWorldTransform().setFromOpenGLMatrix(glm::value_ptr(transform));
 }
 
 void Player::_move(float time, vec3 direction, vec3 rotateDirection)
@@ -119,6 +149,8 @@ void Player::_move(float time, vec3 direction, vec3 rotateDirection)
         _moveDirection = direction;
         _rotateDirection = rotateDirection;
         _rotateStart = time;
+        _rotateStartPosition = _position;
+        _rotateStartHorizontalAngle = _horizontalAngle;
     }
 }
 
@@ -189,18 +221,29 @@ void Player::setLookAngle(float upAngle, float rightAngle)
         _verticalAngle = -MaxVerticalAngle;
 }
 
-void Player::shoot(float time, float deltaT, std::list<Bullet*> *bullets, btCollisionWorld* collisionWorld)
+void Player::shoot(float time, float deltaT)
 {
     static const float ShootDuration = 0.1; // 10 shots per second
 
     if (_shootStart + ShootDuration < time) {
         _shootStart = time;
-        // TODO: allocation during game is not so good
-        Bullet* blt = new Bullet(asset, material);
+        Bullet* blt = new Bullet(asset, material, _instances, _collisionWorld, this);
         blt->shoot(_position, _horizontalAngle, _verticalAngle, _rotateDirection);
-        bullets->push_back(blt);
-        collisionWorld->addCollisionObject(blt->collisionObject);
 
-        // todo make player smaller
+        // TODO make player smaller
+    }
+}
+
+void Player::collide(ModelInstance* other) {
+    if (Enemy* e = dynamic_cast<Enemy*>(other)) {
+    } else if (Bullet* b = dynamic_cast<Bullet*>(other)) {
+		if (b->_owner != this) {
+			markDeleted();
+        }
+    } else if (World* w = dynamic_cast<World*>(other)) {
+        _isRotating = false;
+		_isColliding = true;
+    } else {
+		fprintf(stderr, "Collision with unkown type");
     }
 }

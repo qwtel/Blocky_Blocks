@@ -26,10 +26,12 @@ using namespace glm;
 #include "Holder/Shader.h"
 #include "Holder/Program.h"
 #include "Holder/Texture2.h"
+
 #include "Scene/Camera.h"
 #include "Scene/Player.h"
 #include "Scene/Bullet.h"
 #include "Scene/Enemy.h"
+#include "Scene/World.h"
 
 #include "Scene/Mesh.h"
 #include "Scene/Asset.cpp"
@@ -42,10 +44,11 @@ Camera* camera;
 
 ModelAsset gWoodenCrate;
 ModelAsset gWorld;
-std::list<ModelInstance> gInstances;
+std::list<ModelInstance*> gInstances;
 Light gLight;
 Player* player;
-std::list<Bullet*> bullets;
+World* world;
+//std::list<Bullet*> bullets;
 std::list<Enemy*> enemies;
 
 GLuint positionBuffer;
@@ -57,7 +60,7 @@ Assimp::Importer* importer;
 
 vector<Mesh*> meshes;
 
-btCollisionWorld*	collisionWorld = 0;
+btCollisionWorld* collisionWorld = 0;
 
 GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
@@ -109,18 +112,14 @@ int main()
     LoadWorld();
     CreateWorldInstance();
 
-    player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219),"Texture/noise.png"));
-    collisionWorld->addCollisionObject(player->collisionObject);
+    player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219),"Texture/noise.png"), &gInstances, collisionWorld);
 
     camera = new Camera(player);
-    //player->setCamera(camera);
 
     double time = glfwGetTime();
-    static const int NumEnemies = 0;
+    static const int NumEnemies = 1;
     for (int i = 0; i < NumEnemies; i++) {
-        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, &bullets, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), collisionWorld);
-		collisionWorld->addCollisionObject(enemy->collisionObject);
-        enemies.push_back(enemy);
+        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
     }
 
     //camera->setPosition(vec3(0,0,4));
@@ -171,29 +170,6 @@ int main()
 
 void Update(double time, double deltaT) 
 {
-    collisionWorld->performDiscreteCollisionDetection();
-
-    int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
-	for (int i=0;i<numManifolds;i++)
-	{
-		btPersistentManifold* contactManifold =  collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
-		//btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
-		//btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
-
-		int numContacts = contactManifold->getNumContacts();
-		for (int j=0;j<numContacts;j++)
-		{
-			btManifoldPoint& pt = contactManifold->getContactPoint(j);
-			if (pt.getDistance()<0.f)
-			{
-				printf("Contact!!!!!1 1111");
-				const btVector3& ptA = pt.getPositionWorldOnA();
-				const btVector3& ptB = pt.getPositionWorldOnB();
-				const btVector3& normalOnB = pt.m_normalWorldOnB;
-			}
-		}
-	}
-
     float deltaTf = float(deltaT);
     float timef = float(time);
 
@@ -214,31 +190,21 @@ void Update(double time, double deltaT)
     }
 
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
-        player->shoot(timef, deltaTf, &bullets, collisionWorld);
+        player->shoot(timef, deltaTf);
     }
-
-    // TODO: All these could be in one list
-    player->update(timef, deltaTf);
 
     // since enemies can shoot, update them before the bullets 
-    std::list<Enemy*>::const_iterator it2;
-    for(it2 = enemies.begin(); it2 != enemies.end(); ++it2) {
-        (*it2)->update(timef, deltaTf);
-    }
+    std::list<ModelInstance*>::const_iterator it;
+    for(it = gInstances.begin(); it != gInstances.end();) {
+        ModelInstance* instance = *it;
+        instance->update(timef, deltaTf);
 
-    std::list<Bullet*>::const_iterator bullet_it;
-    for(bullet_it = bullets.begin(); bullet_it != bullets.end();) {
-        Bullet* blt = *bullet_it;
-
-        if (blt->_posi.x > 100 || blt->_posi.y > 100 || blt->_posi.z > 100 ||
-            blt->_posi.x < -100 || blt->_posi.y < -100 || blt->_posi.z < -100)
-        {
-            bullet_it = bullets.erase(bullet_it);
-            collisionWorld->removeCollisionObject(blt->collisionObject);
-            delete blt;
+        if (instance->isMarkedDeleted()) {
+			printf("Deleted something %s\n", typeid(*instance).name());
+            it = gInstances.erase(it);
+            delete instance;
         } else {
-            blt->update(timef, deltaTf);
-            ++bullet_it;
+            ++it;
         }
     }
 
@@ -253,6 +219,32 @@ void Update(double time, double deltaT)
 
     camera->offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
 
+    collisionWorld->performDiscreteCollisionDetection();
+
+    int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
+    for (int i=0;i<numManifolds;i++)
+    {
+        btPersistentManifold* contactManifold =  collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
+        const btCollisionObject* obA = contactManifold->getBody0();
+        const btCollisionObject* obB = contactManifold->getBody1();
+        ModelInstance* pA = (ModelInstance*) obA->getUserPointer();
+        ModelInstance* pB = (ModelInstance*) obB->getUserPointer();
+
+        int numContacts = contactManifold->getNumContacts();
+        for (int j=0;j<numContacts;j++)
+        {
+            btManifoldPoint& pt = contactManifold->getContactPoint(j);
+            if (pt.getDistance() < 0.f)
+            {
+                pA->collide(pB);
+                pB->collide(pA);
+                //const btVector3& ptA = pt.getPositionWorldOnA();
+                //const btVector3& ptB = pt.getPositionWorldOnB();
+                //const btVector3& normalOnB = pt.m_normalWorldOnB;
+            }
+        }
+    }
+
     glfwSetCursorPos(window, CENTER.x, CENTER.y); //reset the mouse, so it doesn't go out of the window
 }
 
@@ -262,22 +254,19 @@ void Draw()
     glUseProgram(player->asset->program->object());
 
     // TODO: All these could be in one list
-    DrawInstance(*player);
+    //DrawInstance(*player);
 
+    /*
     std::list<Bullet*>::const_iterator bullet_it;
     for(bullet_it = bullets.begin(); bullet_it != bullets.end(); ++bullet_it) {
-        Bullet* blt = *bullet_it;
-        DrawInstance(*blt);
+    Bullet* blt = *bullet_it;
+    DrawInstance(*blt);
     }
+    */
 
-    std::list<ModelInstance>::const_iterator it;
+    std::list<ModelInstance*>::const_iterator it;
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
-        DrawInstance(*it);
-    }
-
-    std::list<Enemy*>::const_iterator it2;
-    for(it2 = enemies.begin(); it2 != enemies.end(); ++it2){
-        DrawInstance(*(*it2));
+        DrawInstance(*(*it));
     }
 
     glUseProgram(0);
@@ -321,7 +310,6 @@ void DrawInstance(const ModelInstance& inst)
 
     glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
 
-
     // unbind vao and texture
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -346,8 +334,6 @@ void cleanup()
     {
         delete meshes[i];
     }
-
-
 }
 
 GLFWwindow* openWindow(int width, int height) 
@@ -457,7 +443,6 @@ static Program* LoadShaders() {
 
 static Material* GiveMaterial(vec3 color, string texPath)
 {
-
     tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile(Assets(texPath));
     bmp.flipVertically();
     Texture2* tex = new Texture2(bmp);
@@ -497,35 +482,16 @@ static void ImportScene(const std::string& pFile) {
 
 static void CreateWorldInstance()
 {
-    ModelInstance world;
-    world.asset = &gWorld;
-    world.transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(1, 1, 1));
     Material* m = GiveMaterial(vec3(192,158,233),"Texture/noise.png");
-	world.material = m;
-
-    gInstances.push_back(world);
-
     btTriangleMesh* triMesh = giveTriangleMesh(meshes[1]->mesh);
-
-    btCollisionShape* collisionShape = new btBvhTriangleMeshShape(triMesh, false);
-
-    btTransform temp;
-    temp.setFromOpenGLMatrix(glm::value_ptr(world.transform));
-
-    world.collisionObject = new btCollisionObject();
-    world.collisionObject->setUserPointer(&world);
-    world.collisionObject->setCollisionShape(collisionShape);
-    world.collisionObject->setWorldTransform(temp);
-
-
-    collisionWorld->addCollisionObject(world.collisionObject);
+    world = new World(&gWorld, m, triMesh, &gInstances, collisionWorld);
 }
 
 static btTriangleMesh* giveTriangleMesh(const struct aiMesh *pAIMesh)
 {
     btTriangleMesh* triMesh = new btTriangleMesh();
 
-	aiFace *pAIFace;
+    aiFace *pAIFace;
     for ( int y = 0; y < pAIMesh->mNumFaces; y++ )
     {
         pAIFace = &pAIMesh->mFaces[y];
@@ -546,7 +512,7 @@ static btTriangleMesh* giveTriangleMesh(const struct aiMesh *pAIMesh)
         triMesh->addTriangle(btV1,btV2,btV3);
     }
 
-	return triMesh;
+    return triMesh;
 }
 
 static void LoadWorld()
@@ -555,7 +521,6 @@ static void LoadWorld()
     gWorld.drawType = GL_TRIANGLES;
     gWorld.drawStart = 0;
     gWorld.drawCount = meshes[1]->numIndices;
-    //gWorld.texture = LoadTexture();
 
     // create and bind VAO
     glGenVertexArrays(1, &gWorld.vao);

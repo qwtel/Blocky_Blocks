@@ -17,7 +17,7 @@ using namespace glm;
 class Enemy : public Player
 {
 public:
-    Enemy(ModelAsset* ma, float time, Player* of, std::list<Bullet*>* bullets, Material* mat, btCollisionWorld* collisionWorld);
+    Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld);
     virtual ~Enemy(void);
 
     virtual void update(float t, float deltaT);
@@ -26,7 +26,6 @@ private:
     typedef Player super;
 
     Player* _enemy;
-    std::list<Bullet*>* _bullets;
 
     // time between to moves
     float _waitTime;
