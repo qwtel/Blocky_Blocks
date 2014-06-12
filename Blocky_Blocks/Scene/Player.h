@@ -58,8 +58,12 @@ private:
     // x, y or z axis around which the cube is rotating while moving
     vec3 _rotateDirection;
 
+    float _time;
+
     // time when a "move" started
     float _rotateStart;
+
+    float _rotateDuration;
 
     // true when the the cube is in the air
     bool _isJumping;

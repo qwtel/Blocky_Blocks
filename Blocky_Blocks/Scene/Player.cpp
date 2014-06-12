@@ -96,6 +96,7 @@ void Player::update(float time, float deltaT)
     if (_isRotating) {
         if (_rotateStart + MoveDuration < time /*&& !_isJumping*/) {
             _isRotating = false;
+			_isColliding = false;
 
             // TODO: this is not correct
             _rotateAngle += _rotateDirection * 90.0f;
@@ -127,8 +128,8 @@ void Player::update(float time, float deltaT)
             transform = glm::rotate(transform, rotateAngle, _rotateDirection);
             transform = glm::translate(transform, -bla);
         }
-    } else if (!_isColliding) {
-        transform = glm::translate(mat4(), _position);
+    } else {
+		transform = glm::translate(mat4(), _position);
 
         // rotate according to the look direction
         transform = glm::rotate(transform, _horizontalAngle, vec3(0,1,0));
@@ -235,14 +236,23 @@ void Player::shoot(float time, float deltaT)
 }
 
 void Player::collide(ModelInstance* other) {
-    if (Enemy* e = dynamic_cast<Enemy*>(other)) {
+    if (Player* p = dynamic_cast<Player*>(other)) {
     } else if (Bullet* b = dynamic_cast<Bullet*>(other)) {
 		if (b->_owner != this) {
-			markDeleted();
+			if (dynamic_cast<Enemy*>(this)) {
+				markDeleted();
+            } else {
+				// gameOver();
+            }
         }
     } else if (World* w = dynamic_cast<World*>(other)) {
-        _isRotating = false;
 		_isColliding = true;
+        _moveDirection = _moveDirection * -1.0f;
+        _rotateDirection = _rotateDirection * -1.0f;
+        _rotateStartPosition = _position;
+        _rotateStartHorizontalAngle = _horizontalAngle;
+
+
     } else {
 		fprintf(stderr, "Collision with unkown type");
     }
