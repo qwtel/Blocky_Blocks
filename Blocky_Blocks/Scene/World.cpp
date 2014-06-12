@@ -4,7 +4,7 @@ World::World(ModelAsset* ma, Material* mat, btTriangleMesh* triMesh, std::list<M
     ModelInstance(instances, collisionWorld)
 {
     asset = ma;
-    transform = translate(mat4(), vec3(0,-1,0)) * scale(mat4(), vec3(1, 1, 1));
+    transform = translate(mat4(), vec3(0,-1,0));
     material = mat;
 
     btCollisionShape* collisionShape = new btBvhTriangleMeshShape(triMesh, false);

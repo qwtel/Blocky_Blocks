@@ -117,7 +117,7 @@ int main()
     camera = new Camera(player);
 
     double time = glfwGetTime();
-    static const int NumEnemies = 0;
+    static const int NumEnemies = 10;
     for (int i = 0; i < NumEnemies; i++) {
         Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
     }

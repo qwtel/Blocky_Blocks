@@ -59,6 +59,8 @@ void main() {
 	else if (specularCoefficient < C) specularCoefficient = C;
 	else specularCoefficient = D;
 
+	specularCoefficient *= 0.5;
+
 	vec3 specular = specularCoefficient * material.specularColor * light.intensities;
 
 	//attenuation
