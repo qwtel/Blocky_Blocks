@@ -429,7 +429,7 @@ static void LoadWoodenCrateAsset()
 
 static Program* LoadShaders() {
     Shader* vertexShader = new Shader(Assets("Shader/lightingVertexShader.vert").c_str(), GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader(Assets("Shader/lightingFragmentshader.frag").c_str(), GL_FRAGMENT_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/celShader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 

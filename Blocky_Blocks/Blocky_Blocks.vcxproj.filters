@@ -99,6 +99,7 @@
     <None Include="Assets\Shader\vertexshader.vert" />
     <None Include="Assets\Models\cube.model" />
     <None Include="Assets\Models\world.model" />
+    <None Include="Assets\Shader\celShader.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Texture\block.png">
