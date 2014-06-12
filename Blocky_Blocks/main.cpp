@@ -253,24 +253,27 @@ void Update(double time, double deltaT)
 
 void Draw() 
 {
+
+	glEnable(GL_CULL_FACE);
+
     std::list<ModelInstance*>::const_iterator it;
-
-	// NOTE: order doesn't matter: visibility depends on z-buffer
-
-	// shader 2
-    glUseProgram(player->asset->program2->object());
-	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-
-    for(it = gInstances.begin(); it != gInstances.end(); ++it){
-        DrawInstance2(*(*it));
-    }
 
 	// shader 1
     glUseProgram(player->asset->program->object());
+	glCullFace(GL_BACK);
 	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
         DrawInstance(*(*it));
+    }
+
+	// shader 2
+    glUseProgram(player->asset->program2->object());
+	glCullFace(GL_FRONT);
+	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+    for(it = gInstances.begin(); it != gInstances.end(); ++it){
+        DrawInstance2(*(*it));
     }
 
 	// clear
@@ -550,6 +553,10 @@ static void LoadWoodenCrateAsset()
     glEnableVertexAttribArray(gWoodenCrate.program2->attrib("vert"));
     glVertexAttribPointer(gWoodenCrate.program2->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
 
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.normalBuffer);
+    glEnableVertexAttribArray(gWoodenCrate.program->attrib("vertNormal"));
+    glVertexAttribPointer(gWoodenCrate.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
     // unbind the VAO
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -604,6 +611,10 @@ static void LoadWorldAsset()
     glBindBuffer(GL_ARRAY_BUFFER, gWorld.positionBuffer);
     glEnableVertexAttribArray(gWorld.program2->attrib("vert"));
     glVertexAttribPointer(gWorld.program2->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWorld.normalBuffer);
+    glEnableVertexAttribArray(gWorld.program->attrib("vertNormal"));
+    glVertexAttribPointer(gWorld.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
 
     // unbind the VAO
     glBindVertexArray(0);
