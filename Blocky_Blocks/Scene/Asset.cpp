@@ -74,4 +74,6 @@ struct Light {
     vec3 intensities;
     float attenuation;
     float ambientCoefficient;
+    vec3 direction;
+    float range;
 };

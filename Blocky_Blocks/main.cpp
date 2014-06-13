@@ -53,6 +53,7 @@ std::list<ModelInstance*> gInstances;
 Light gLight;
 Player* player;
 World* world;
+int currentEnemies = 0;
 
 GLuint positionBuffer;
 GLuint normalBuffer;
@@ -60,7 +61,6 @@ GLuint indexBuffer;
 GLuint uvBuffer;
 
 Assimp::Importer* importer;
-
 vector<Mesh*> meshes;
 
 btCollisionWorld* collisionWorld = 0;
@@ -133,9 +133,7 @@ int main()
     camera = new Camera(player);
 
     double time = glfwGetTime();
-    for (int i = 0; i < NumEnemies; i++) {
-        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
-    }
+
 
     //camera->setPosition(vec3(0,0,4));
     camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
@@ -144,12 +142,24 @@ int main()
     gLight.position.y = gLight.position.y + 15.0f;
     gLight.intensities = vec3(1, 1, 1) * 0.9f;
     gLight.attenuation = 0.0005f;
-    gLight.ambientCoefficient = 0.75f;
+    gLight.ambientCoefficient = 0.1f;
+    gLight.direction=normalize(player->position()-camera->position());
+    gLight.range = 100;
+
 
     while (running && !glfwWindowShouldClose(window))
     {
         //printf("%i\n", particles.size());
+        //move light
+        gLight.position = player->position();
+        gLight.position.y = gLight.position.y + 0.2f;
+        gLight.direction=normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));
 
+        //spawn enemies
+        for (int i = 0; i < NumEnemies - currentEnemies; i++) {
+            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
+            currentEnemies++;
+        }
         // (2) clear the frame and depth buffer
         vec3 bg = vec3(225,209,244) / 255.0f;
         glClearColor(bg.r, bg.g, bg.b, 1);
@@ -245,8 +255,13 @@ void Update(double time, double deltaT)
         ModelInstance* instance = *it;
         instance->update(timef, deltaTf);
 
+
+
         if (instance->isMarkedDeleted()) {
             printf("Deleted something %s\n", typeid(*instance).name());
+            if(typeid(*instance) == typeid(Enemy)){
+                currentEnemies--;
+            }
 
             if (dynamic_cast<Bullet*>(instance)) {
                 for (int i = 0; i < 50; i++) {
@@ -326,15 +341,15 @@ void Draw()
     const int size = particles.size();
     if (size > 0) {
         mat4* data = new mat4[size];
-	vec3* colors = new vec3[size];
+        vec3* colors = new vec3[size];
 
         std::list<Particle*>::const_iterator it;
         int n = 0;
         for(it = particles.begin(); it != particles.end(); ++it) {
             Particle* p = (*it);
             data[n] = mat4(p->transform);
-	    colors[n] = vec3(p->material->color);
-	    n++;
+            colors[n] = vec3(p->material->color);
+            n++;
         }
 
         // cel shader
@@ -352,7 +367,7 @@ void Draw()
         DrawParticlesContour(data, colors, size);
 
         delete data;
-	delete colors;
+        delete colors;
     }
 
     // clear
@@ -451,6 +466,8 @@ void DrawInstance(const ModelInstance& inst)
     glUniform3fv(program->uniform("light.intensities"), 1, glm::value_ptr(gLight.intensities));
     glUniform1f(program->uniform("light.attenuation"), gLight.attenuation);
     glUniform1f(program->uniform("light.ambientCoefficient"), gLight.ambientCoefficient);
+    glUniform3fv(program->uniform("light.direction"), 1, glm::value_ptr(gLight.direction));
+    glUniform1f(program->uniform("light.range"), gLight.range);
 
     glUniform3fv(program->uniform("material.color"), 1, glm::value_ptr(material->color)); 
     glUniform3fv(program->uniform("material.specularColor"), 1, glm::value_ptr(material->specularColor));

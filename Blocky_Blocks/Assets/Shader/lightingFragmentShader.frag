@@ -9,6 +9,8 @@ uniform struct Light {
 	vec3 intensities;
 	float attenuation;
 	float ambientCoefficient;
+	vec3 direction;
+	float range;
 } light;
 
 uniform struct Material {
@@ -24,12 +26,17 @@ in vec2 fragTexCoord;
 out vec4 finalColor;
 
 void main() {
+
 	vec3 normal = normalize(transpose(inverse(mat3(model))) * fragNormal);
 	vec3 surfacePos = vec3(model * vec4(fragVert, 1));
 	vec4 surfaceColor = vec4((material.color / 255.0), 1) * texture(tex, fragTexCoord);
 	vec3 surfaceToLight = normalize(light.position - surfacePos);
 	vec3 surfaceToCamera = normalize(cameraPosition - surfacePos);
 
+	float cosDir = dot(surfaceToLight, -light.direction);
+	float spotEffect = smoothstep(0.8,0.98, cosDir);
+ 
+	float heightAttenuation = smoothstep(light.range, 0.0f, length(surfaceToLight));
 	//ambient
 	vec3 ambient = light.ambientCoefficient * (surfaceColor.rgb * light.intensities);
 
@@ -49,7 +56,7 @@ void main() {
 	float attenuation = 1.0 / (1.0 + light.attenuation * pow(distanceToLight, 2));
 
 	//linear color (color before gamma correction)
-    vec3 linearColor = ambient + attenuation * (diffuse + specular);
+    vec3 linearColor = ambient + attenuation * (diffuse + specular)*spotEffect*heightAttenuation;
 
 	finalColor = vec4(linearColor, 1);
 

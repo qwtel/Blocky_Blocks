@@ -33,7 +33,7 @@ static const float FallSpeed = 16.0; //units per second
 
 Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) :
     ModelInstance(instances, collisionWorld),
-    _position(0, 20, 0),
+    _position(-80, 40, -80),
     _horizontalAngle(0.0f),
     _verticalAngle(0.0f),
     _rotateDirection(),

@@ -18,7 +18,9 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<Mo
     _lastMove(time),
     _waitTime(rand() % 2)
 {
-    _position = vec3(rand() % 50 - 25, 20, rand() % 50 - 25);
+
+        _position = vec3(rand() % 170 - 85, 20, rand() % 170 - 85);
+    
     //printf("%f, %f, %f\n", _position.x, _position.y, _position.z);
     //color = vec3(255,153,153);
 }
