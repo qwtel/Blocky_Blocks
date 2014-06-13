@@ -7,7 +7,7 @@ in vec3 vert;
 in vec3 vertNormal;
 
 void main() {
-	vec3 disp = vert + normalize(vertNormal) * 0.01;
+	vec3 disp = vert + normalize(vertNormal) * 0.005;
 	gl_Position = camera * model * vec4(disp, 1);
 }
 
