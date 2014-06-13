@@ -83,7 +83,7 @@ struct Particle {
 	asset = a;
 	material = mat;
 	
-	_scale = (rand() % 10) / 100.f;
+	_scale = (rand() % 20) / 100.f;
 	
 	transform = glm::scale(mat4(), vec3(_scale, _scale, _scale));
 

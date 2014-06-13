@@ -40,6 +40,7 @@ const vec2 SCREEN_SIZE(800, 600);
 const vec2 CENTER = SCREEN_SIZE * 0.5f;
 
 static const int TimeToLive = 1;
+static const int NumEnemies = 10;
 
 GLFWwindow* window;
 Camera* camera;
@@ -69,14 +70,15 @@ Program* instancingProgram2;
 GLuint instancingVao;
 GLuint instancingVao2;
 GLuint instancingVbo;
+GLuint instancingColorVbo;
 
 GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
 void Draw();
 void DrawInstance(const ModelInstance& inst);
-void DrawInstance2(const ModelInstance& inst);
-void DrawParticles(mat4* data, int size);
-void DrawParticles2(mat4* data, int size);
+void DrawContour(const ModelInstance& inst);
+void DrawParticles(mat4* data, vec3* colors, int size);
+void DrawParticlesContour(mat4* data, vec3* colors, int size);
 void cleanup();
 
 static void LoadWoodenCrateAsset();
@@ -129,7 +131,6 @@ int main()
     camera = new Camera(player);
 
     double time = glfwGetTime();
-    static const int NumEnemies = 0;
     for (int i = 0; i < NumEnemies; i++) {
         Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
     }
@@ -246,7 +247,7 @@ void Update(double time, double deltaT)
             printf("Deleted something %s\n", typeid(*instance).name());
 
             if (dynamic_cast<Player*>(instance) || dynamic_cast<Bullet*>(instance)) {
-                for (int i = 0; i < 100; i++) {
+                for (int i = 0; i < 50; i++) {
                     Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef);
                     particles.push_back(part);
                 }
@@ -310,7 +311,7 @@ void Draw()
     glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
-        DrawInstance2(*(*it));
+        DrawContour(*(*it));
     }
 
     // "particle" shader
@@ -318,12 +319,15 @@ void Draw()
     const int size = particles.size();
     if (size > 0) {
         mat4* data = new mat4[size];
+	vec3* colors = new vec3[size];
 
         std::list<Particle*>::const_iterator it;
         int n = 0;
         for(it = particles.begin(); it != particles.end(); ++it) {
             Particle* p = (*it);
-            data[n++] = mat4(p->transform);
+            data[n] = mat4(p->transform);
+	    colors[n] = vec3(p->material->color);
+	    n++;
         }
 
         // cel shader
@@ -331,26 +335,30 @@ void Draw()
         glCullFace(GL_BACK);
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
-        DrawParticles(data, size);
+        DrawParticles(data, colors, size);
 
         // contour shader
         glUseProgram(instancingProgram2->object());
         glCullFace(GL_FRONT);
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
-        DrawParticles2(data, size);
+        DrawParticlesContour(data, colors, size);
 
         delete data;
+	delete colors;
     }
 
     // clear
     glUseProgram(0);
 }
 
-void DrawParticles(mat4* data, int size)
+void DrawParticles(mat4* data, vec3* colors, int size)
 {
     glBindBuffer(GL_ARRAY_BUFFER, instancingVbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * size, &data[0], GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, instancingColorVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3) * size, &colors[0], GL_DYNAMIC_DRAW);
 
     Particle* p = particles.front();
 
@@ -375,7 +383,7 @@ void DrawParticles(mat4* data, int size)
     glUniform1f(program->uniform("light.attenuation"), gLight.attenuation);
     glUniform1f(program->uniform("light.ambientCoefficient"), gLight.ambientCoefficient);
 
-    glUniform3fv(program->uniform("material.color"), 1, glm::value_ptr(material->color)); 
+    //glUniform3fv(program->uniform("material.color"), 1, glm::value_ptr(material->color)); 
     glUniform3fv(program->uniform("material.specularColor"), 1, glm::value_ptr(material->specularColor));
     glUniform1f(program->uniform("material.shininess"), material->shininess);
 
@@ -387,7 +395,7 @@ void DrawParticles(mat4* data, int size)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void DrawParticles2(mat4* data, int size)
+void DrawParticlesContour(mat4* data, vec3* colors, int size)
 {
     glBindBuffer(GL_ARRAY_BUFFER, instancingVbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * size, &data[0], GL_DYNAMIC_DRAW);
@@ -395,7 +403,7 @@ void DrawParticles2(mat4* data, int size)
     Particle* p = particles.front();
 
     ModelAsset* asset = p->asset;
-    Material* material = p->material;
+    //Material* material = p->material;
     Program* program = instancingProgram2;
 
     // bind VAO
@@ -423,13 +431,14 @@ void DrawInstance(const ModelInstance& inst)
 
     // set the shader uniforms
     glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera->matrix()));
+    glUniform3fv(program->uniform("cameraPosition"), 1, glm::value_ptr(camera->position()));
+
     glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, glm::value_ptr(inst.transform));
 
     // bind the texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, material->texture->object());
-
-    glUniform3fv(program->uniform("cameraPosition"), 1, glm::value_ptr(camera->position()));
+    glUniform1i(program->uniform("tex"), 0);
 
     glUniform3fv(program->uniform("light.position"), 1, glm::value_ptr(gLight.position));
     glUniform3fv(program->uniform("light.intensities"), 1, glm::value_ptr(gLight.intensities));
@@ -440,8 +449,6 @@ void DrawInstance(const ModelInstance& inst)
     glUniform3fv(program->uniform("material.specularColor"), 1, glm::value_ptr(material->specularColor));
     glUniform1f(program->uniform("material.shininess"), material->shininess);
 
-    glUniform1i(program->uniform("tex"), 0);
-
     glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
 
     // unbind vao and texture
@@ -449,7 +456,7 @@ void DrawInstance(const ModelInstance& inst)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void DrawInstance2(const ModelInstance& inst) 
+void DrawContour(const ModelInstance& inst) 
 {
     ModelAsset* asset = inst.asset;
     Program* program = asset->program2;
@@ -542,25 +549,29 @@ static Texture2* LoadTexture()
     return new Texture2(bmp);
 }
 
-static Program* LoadShaders() {
+static Program* LoadShaders() 
+{
     Shader* vertexShader = new Shader(Assets("Shader/lightingVertexShader.vert").c_str(), GL_VERTEX_SHADER);
     Shader* fragmentShader = new Shader(Assets("Shader/celShader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
-static Program* LoadShaders2() {
+static Program* LoadShaders2() 
+{
     Shader* vertexShader = new Shader(Assets("Shader/vertexshader.vert").c_str(), GL_VERTEX_SHADER);
     Shader* fragmentShader = new Shader(Assets("Shader/fragmentshader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
-static Program* LoadShadersI() {
+static Program* LoadShadersI() 
+{
     Shader* vertexShader = new Shader(Assets("Shader/instancingShader.vert").c_str(), GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader(Assets("Shader/celShader.frag").c_str(), GL_FRAGMENT_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/debugShader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
-static Program* LoadShaders2I() {
+static Program* LoadShaders2I() 
+{
     Shader* vertexShader = new Shader(Assets("Shader/instancingShader2.vert").c_str(), GL_VERTEX_SHADER);
     Shader* fragmentShader = new Shader(Assets("Shader/fragmentshader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
@@ -728,6 +739,12 @@ static void LoadWoodenCrateAsset()
         glVertexAttribPointer(pos + i, 4, GL_FLOAT, GL_FALSE, sizeof(mat4), (void*)(sizeof(vec4) * i));
         glVertexAttribDivisor(pos + i, 1);
     }
+
+    glGenBuffers(1, &instancingColorVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, instancingColorVbo);
+    glEnableVertexAttribArray(instancingProgram->attrib("materialColor"));
+    glVertexAttribPointer(instancingProgram->attrib("materialColor"), 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)sizeof(vec3));
+    glVertexAttribDivisor(instancingProgram->attrib("materialColor"), 1);
 
     // unbind the VAO
     glBindVertexArray(0);

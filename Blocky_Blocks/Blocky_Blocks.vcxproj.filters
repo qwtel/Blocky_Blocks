@@ -102,6 +102,7 @@
     <None Include="Assets\Shader\celShader.frag" />
     <None Include="Assets\Shader\instancingShader.vert" />
     <None Include="Assets\Shader\instancingShader2.vert" />
+    <None Include="Assets\Shader\debugShader.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Texture\block.png">

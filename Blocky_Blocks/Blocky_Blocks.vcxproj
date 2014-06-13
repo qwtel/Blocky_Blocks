@@ -119,6 +119,7 @@
     <None Include="Assets\Models\world.model" />
     <None Include="Assets\Shader\cameraVertexShader.vert" />
     <None Include="Assets\Shader\celShader.frag" />
+    <None Include="Assets\Shader\debugShader.frag" />
     <None Include="Assets\Shader\instancingShader.vert" />
     <None Include="Assets\Shader\instancingShader2.vert" />
     <None Include="Assets\Shader\lightingFragmentShader.frag" />
