@@ -82,7 +82,10 @@ struct Particle {
     {
 	asset = a;
 	material = mat;
-	transform = glm::scale(mat4(), vec3(0.1, 0.1, 0.1));
+	
+	_scale = (rand() % 10) / 100.f;
+	
+	transform = glm::scale(mat4(), vec3(_scale, _scale, _scale));
 
 	int x = rand() % 100 - 50;
 	int y = rand() % 100 - 50;
@@ -95,13 +98,14 @@ struct Particle {
     void update(float time, float deltaT) {
         _position += deltaT * _direction * _velocity;
 	transform = glm::translate(mat4(), _position);
-	transform = glm::scale(transform, vec3(0.1, 0.1, 0.1));
+	transform = glm::scale(transform, vec3(_scale, _scale, _scale));
     }
 
 private:
     vec3 _position;
     vec3 _direction;
     float _velocity;
+    float _scale;
 };
 
 struct Light {
