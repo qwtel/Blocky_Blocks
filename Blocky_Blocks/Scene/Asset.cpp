@@ -3,6 +3,9 @@
 #include <list>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 using namespace glm;
 
 #include <bullet/btBulletCollisionCommon.h>
@@ -51,6 +54,7 @@ struct ModelInstance {
 	_collisionWorld->removeCollisionObject(collisionObject);
     };
 
+    virtual vec3 position() { return vec3(); };
     virtual void update(float time, float deltaT) = 0;
     virtual void collide(ModelInstance* other, vec3 pA, vec3 pB) = 0;
 
@@ -63,6 +67,41 @@ protected:
 
 private:
     bool _deathMark;
+};
+
+struct Particle {
+    ModelAsset* asset;
+    Material* material;
+    mat4 transform;
+
+    float _creationTime;
+
+    Particle(vec3 position, Material* mat, ModelAsset* a, float time) : 
+        _position(position),
+	_creationTime(time)
+    {
+	asset = a;
+	material = mat;
+	transform = glm::scale(mat4(), vec3(0.1, 0.1, 0.1));
+
+	int x = rand() % 100 - 50;
+	int y = rand() % 100 - 50;
+	int z = rand() % 100 - 50;
+
+	_direction = vec3(x, y, z) / 50.f;
+	_velocity = rand() % 25 + 25;
+    }
+
+    void update(float time, float deltaT) {
+        _position += deltaT * _direction * _velocity;
+	transform = glm::translate(mat4(), _position);
+	transform = glm::scale(transform, vec3(0.1, 0.1, 0.1));
+    }
+
+private:
+    vec3 _position;
+    vec3 _direction;
+    float _velocity;
 };
 
 struct Light {

@@ -110,3 +110,7 @@ void Bullet::collide(ModelInstance* other, vec3 pA, vec3 pB)
         fprintf(stderr, "Collision with unkown type");
     }
 }
+
+vec3 Bullet::position() {
+    return _posi;
+}

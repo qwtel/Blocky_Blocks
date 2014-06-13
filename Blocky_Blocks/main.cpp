@@ -39,6 +39,8 @@ using namespace glm;
 const vec2 SCREEN_SIZE(800, 600);
 const vec2 CENTER = SCREEN_SIZE * 0.5f;
 
+static const int TimeToLive = 1;
+
 GLFWwindow* window;
 Camera* camera;
 
@@ -60,11 +62,19 @@ vector<Mesh*> meshes;
 
 btCollisionWorld* collisionWorld = 0;
 
+std::list<Particle*> particles;
+
+Program* instancingProgram;
+Program* instancingProgram2;
+GLuint instancingVao;
+GLuint instancingVao2;
+
 GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
 void Draw();
 void DrawInstance(const ModelInstance& inst);
 void DrawInstance2(const ModelInstance& inst);
+void DrawParticles();
 void cleanup();
 
 static void LoadWoodenCrateAsset();
@@ -133,6 +143,8 @@ int main()
 
     while (running && !glfwWindowShouldClose(window))
     {
+        //printf("%i\n", particles.size());
+
         // (2) clear the frame and depth buffer
         vec3 bg = vec3(225,209,244) / 255.0f;
         glClearColor(bg.r, bg.g, bg.b, 1);
@@ -194,8 +206,8 @@ void Update(double time, double deltaT)
                 const btVector3& ptB = pt.getPositionWorldOnB();
                 //const btVector3& normalOnB = pt.m_normalWorldOnB;
 
-				vec3 pointA = vec3(ptA.getX(), ptA.getY(), ptA.getZ());
-				vec3 pointB = vec3(ptB.getX(), ptB.getY(), ptB.getZ());
+                vec3 pointA = vec3(ptA.getX(), ptA.getY(), ptA.getZ());
+                vec3 pointB = vec3(ptB.getX(), ptB.getY(), ptB.getZ());
 
                 pA->collide(pB, pointA, pointB);
                 pB->collide(pA, pointB, pointA);
@@ -229,11 +241,34 @@ void Update(double time, double deltaT)
         instance->update(timef, deltaTf);
 
         if (instance->isMarkedDeleted()) {
-			printf("Deleted something %s\n", typeid(*instance).name());
+            printf("Deleted something %s\n", typeid(*instance).name());
+
+            if (dynamic_cast<Player*>(instance) || dynamic_cast<Bullet*>(instance)) {
+                for (int i = 0; i < 100; i++) {
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef);
+                    particles.push_back(part);
+                }
+            }
+
             it = gInstances.erase(it);
             delete instance;
         } else {
             ++it;
+        }
+    }
+
+    // update "particles"
+    std::list<Particle*>::const_iterator it2;
+    for (it2 = particles.begin(); it2 != particles.end();) {
+
+        Particle* part = *it2;
+        part->update(timef, deltaTf);
+
+        if (part->_creationTime + TimeToLive < time) {
+            it2 = particles.erase(it2);
+            delete part;
+        } else {
+            ++it2;
         }
     }
 
@@ -254,30 +289,94 @@ void Update(double time, double deltaT)
 void Draw() 
 {
 
-	glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
 
     std::list<ModelInstance*>::const_iterator it;
 
-	// shader 1
+    // cel shader
     glUseProgram(player->asset->program->object());
-	glCullFace(GL_BACK);
-	glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    glCullFace(GL_BACK);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
         DrawInstance(*(*it));
     }
 
-	// shader 2
+    // contour shader
     glUseProgram(player->asset->program2->object());
-	glCullFace(GL_FRONT);
-	glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    glCullFace(GL_FRONT);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
         DrawInstance2(*(*it));
     }
 
-	// clear
+    // "particle" shader
+    // cel shader
+    glUseProgram(instancingProgram->object());
+    glCullFace(GL_BACK);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+    // TODO: Single call
+    //glDrawElementsInstanced(
+    DrawParticles();
+
+    // contour shader
+    /*
+    glUseProgram(instancingProgram2->object());
+    glCullFace(GL_FRONT);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    */
+
+    // TODO: Single call
+
+    // clear
     glUseProgram(0);
+}
+
+void DrawParticles()
+{
+    if (particles.size() > 0 ) {
+        std::list<Particle*>::const_iterator it;
+        for(it = particles.begin(); it != particles.end(); ++it){
+            Particle* p = *it;
+
+            ModelAsset* asset = p->asset;
+            Material* material = p->material;
+            Program* program = instancingProgram;
+
+            // bind VAO
+            glBindVertexArray(asset->vao);
+
+            // set the shader uniforms
+            glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera->matrix()));
+            glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, glm::value_ptr(p->transform));
+
+            // bind the texture
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, material->texture->object());
+
+            glUniform3fv(program->uniform("cameraPosition"), 1, glm::value_ptr(camera->position()));
+
+            glUniform3fv(program->uniform("light.position"), 1, glm::value_ptr(gLight.position));
+            glUniform3fv(program->uniform("light.intensities"), 1, glm::value_ptr(gLight.intensities));
+            glUniform1f(program->uniform("light.attenuation"), gLight.attenuation);
+            glUniform1f(program->uniform("light.ambientCoefficient"), gLight.ambientCoefficient);
+
+            glUniform3fv(program->uniform("material.color"), 1, glm::value_ptr(material->color)); 
+            glUniform3fv(program->uniform("material.specularColor"), 1, glm::value_ptr(material->specularColor));
+            glUniform1f(program->uniform("material.shininess"), material->shininess);
+
+            glUniform1i(program->uniform("tex"), 0);
+
+            glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
+
+            // unbind vao and texture
+            glBindVertexArray(0);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+        }
+    }
 }
 
 void DrawInstance(const ModelInstance& inst)
@@ -430,6 +529,18 @@ static Program* LoadShaders2() {
     return new Program(vertexShader, fragmentShader);
 }
 
+static Program* LoadShadersI() {
+    Shader* vertexShader = new Shader(Assets("Shader/lightingVertexShader.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/celShader.frag").c_str(), GL_FRAGMENT_SHADER);
+    return new Program(vertexShader, fragmentShader);
+}
+
+static Program* LoadShaders2I() {
+    Shader* vertexShader = new Shader(Assets("Shader/vertexshader.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/fragmentshader.frag").c_str(), GL_FRAGMENT_SHADER);
+    return new Program(vertexShader, fragmentShader);
+}
+
 static Material* GiveMaterial(vec3 color, string texPath)
 {
     tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile(Assets(texPath));
@@ -506,13 +617,13 @@ static btTriangleMesh* giveTriangleMesh(const struct aiMesh *pAIMesh)
 
 static void LoadWoodenCrateAsset()
 {
-    gWoodenCrate.program = LoadShaders();
-    gWoodenCrate.program2 = LoadShaders2();
     gWoodenCrate.drawType = GL_TRIANGLES;
     gWoodenCrate.drawStart = 0;
     gWoodenCrate.drawCount = meshes[0]->numIndices;
 
     // create and bind VAO
+    gWoodenCrate.program = LoadShaders();
+
     glGenVertexArrays(1, &gWoodenCrate.vao);
     glBindVertexArray(gWoodenCrate.vao);
 
@@ -543,7 +654,9 @@ static void LoadWoodenCrateAsset()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    // create and bind VAO
+    // create and bind VAO 2
+    gWoodenCrate.program2 = LoadShaders2();
+
     glGenVertexArrays(1, &gWoodenCrate.vao2);
     glBindVertexArray(gWoodenCrate.vao2);
 
@@ -561,6 +674,58 @@ static void LoadWoodenCrateAsset()
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // bla
+    instancingProgram = LoadShadersI();
+
+    glGenVertexArrays(1, &instancingVao);
+    glBindVertexArray(instancingVao);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.positionBuffer);
+    glEnableVertexAttribArray(instancingProgram->attrib("vert"));
+    glVertexAttribPointer(instancingProgram->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.normalBuffer);
+    glEnableVertexAttribArray(instancingProgram->attrib("vertNormal"));
+    glVertexAttribPointer(instancingProgram->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.uvBuffer);
+    glEnableVertexAttribArray(instancingProgram->attrib("vertTexCoord"));
+    glVertexAttribPointer(instancingProgram->attrib("vertTexCoord"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+    // TODO
+
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    /*
+    // bla
+    instancingProgram2 = LoadShaders2I();
+
+    glGenVertexArrays(1, &instancingVao2);
+    glBindVertexArray(instancingVao2);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.positionBuffer);
+    glEnableVertexAttribArray(instancingProgram2->attrib("vert"));
+    glVertexAttribPointer(instancingProgram2->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.normalBuffer);
+    glEnableVertexAttribArray(instancingProgram2->attrib("vertNormal"));
+    glVertexAttribPointer(instancingProgram2->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+    // TODO
+
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    */
 }
 
 static void LoadWorldAsset()

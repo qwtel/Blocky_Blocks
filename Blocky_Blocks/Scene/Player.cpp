@@ -239,24 +239,24 @@ void Player::collide(ModelInstance* other, vec3 pA, vec3 pB) {
     if (Player* p = dynamic_cast<Player*>(other)) {
     } else if (Bullet* b = dynamic_cast<Bullet*>(other)) {
         if (b->_owner != this) {
-            if (dynamic_cast<Enemy*>(this)) {
+            if (Enemy* e = dynamic_cast<Enemy*>(this)) {
                 markDeleted();
             } else {
                 // gameOver();
             }
         }
     } else if (World* w = dynamic_cast<World*>(other)) {
-		//printf("Is this happening all the time??");
+        //printf("Is this happening all the time??");
 
-		if(pA.y < pB.y) {
-			_isFalling = false;
-			_isJumping = false;
+        if(pA.y < pB.y) {
+            _isFalling = false;
+            _isJumping = false;
         } else {
-			_isColliding = true;
-			_moveDirection = _moveDirection * -1.0f;
-			_rotateDirection = _rotateDirection * -1.0f;
-			_rotateStartPosition = _position;
-			_rotateStartHorizontalAngle = _horizontalAngle;
+            _isColliding = true;
+            _moveDirection = _moveDirection * -1.0f;
+            _rotateDirection = _rotateDirection * -1.0f;
+            _rotateStartPosition = _position;
+            _rotateStartHorizontalAngle = _horizontalAngle;
         }
 
         //_position.y = _position.y + FallSpeed * _deltaT;
