@@ -146,7 +146,13 @@ int main()
     gLight.direction=normalize(player->position()-camera->position());
     gLight.range = 100;
 
-
+    bool firstEnemy = true;
+    //spawn enemies
+    for (int i = 0; i < NumEnemies - currentEnemies; i++) {
+        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
+        currentEnemies++;
+    }
+    firstEnemy = false;
     while (running && !glfwWindowShouldClose(window))
     {
         //printf("%i\n", particles.size());
@@ -254,7 +260,6 @@ void Update(double time, double deltaT)
     for(it = gInstances.begin(); it != gInstances.end();) {
         ModelInstance* instance = *it;
         instance->update(timef, deltaTf);
-
 
 
         if (instance->isMarkedDeleted()) {
