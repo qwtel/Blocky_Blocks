@@ -54,6 +54,9 @@
     <ClCompile Include="Scene\World.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Particle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Holder\Holder.h">
@@ -102,7 +105,7 @@
     <None Include="Assets\Shader\celShader.frag" />
     <None Include="Assets\Shader\instancingShader.vert" />
     <None Include="Assets\Shader\instancingShader2.vert" />
-    <None Include="Assets\Shader\debugShader.frag" />
+    <None Include="Assets\Shader\instancingCelShader.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Texture\block.png">

@@ -18,6 +18,8 @@ static const vec3 LeftRotate = -ZAxis;
 static const vec3 Right = -Left;
 static const vec3 RightRotate = -LeftRotate;
 
+static const float ShootDuration = 0.2; // 5 shots per second
+
 static const float MinVerticalAngle = -25.0f;
 static const float MaxVerticalAngle = 65.0f;
 
@@ -224,8 +226,6 @@ void Player::setLookAngle(float upAngle, float rightAngle)
 
 void Player::shoot(float time, float deltaT)
 {
-    static const float ShootDuration = 0.1; // 10 shots per second
-
     if (_shootStart + ShootDuration < time) {
         _shootStart = time;
         Bullet* blt = new Bullet(asset, material, _instances, _collisionWorld, this);

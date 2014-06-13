@@ -96,6 +96,7 @@
     <ClCompile Include="Scene\Player.cpp" />
     <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Scene\Asset.cpp" />
+    <ClCompile Include="Scene\Particle.cpp" />
     <ClCompile Include="Scene\World.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -119,7 +120,7 @@
     <None Include="Assets\Models\world.model" />
     <None Include="Assets\Shader\cameraVertexShader.vert" />
     <None Include="Assets\Shader\celShader.frag" />
-    <None Include="Assets\Shader\debugShader.frag" />
+    <None Include="Assets\Shader\instancingCelShader.frag" />
     <None Include="Assets\Shader\instancingShader.vert" />
     <None Include="Assets\Shader\instancingShader2.vert" />
     <None Include="Assets\Shader\lightingFragmentShader.frag" />

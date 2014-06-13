@@ -7,7 +7,7 @@ static const int Moviness = 500;
 static const int Jumpiness = 10;
 
 // 1 -> shoot on every move, 10 -> shoot approx. every 10th move
-static const int Shootiness = 10;
+static const int Shootiness = 2;
 
 // 10 -> will aim at max 10 degrees off target
 static const int Aiminess = 10;

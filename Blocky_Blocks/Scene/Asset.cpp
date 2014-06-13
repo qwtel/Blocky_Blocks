@@ -69,45 +69,6 @@ private:
     bool _deathMark;
 };
 
-struct Particle {
-    ModelAsset* asset;
-    Material* material;
-    mat4 transform;
-
-    float _creationTime;
-
-    Particle(vec3 position, Material* mat, ModelAsset* a, float time) : 
-        _position(position),
-	_creationTime(time)
-    {
-	asset = a;
-	material = mat;
-	
-	_scale = (rand() % 20) / 100.f;
-	
-	transform = glm::scale(mat4(), vec3(_scale, _scale, _scale));
-
-	int x = rand() % 100 - 50;
-	int y = rand() % 100 - 50;
-	int z = rand() % 100 - 50;
-
-	_direction = vec3(x, y, z) / 50.f;
-	_velocity = rand() % 25 + 25;
-    }
-
-    void update(float time, float deltaT) {
-        _position += deltaT * _direction * _velocity;
-	transform = glm::translate(mat4(), _position);
-	transform = glm::scale(transform, vec3(_scale, _scale, _scale));
-    }
-
-private:
-    vec3 _position;
-    vec3 _direction;
-    float _velocity;
-    float _scale;
-};
-
 struct Light {
     vec3 position;
     vec3 intensities;

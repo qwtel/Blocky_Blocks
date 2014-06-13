@@ -34,12 +34,14 @@ using namespace glm;
 #include "Scene/World.h"
 
 #include "Scene/Mesh.h"
+
 #include "Scene/Asset.cpp"
+#include "Scene/Particle.cpp"
 
 const vec2 SCREEN_SIZE(800, 600);
 const vec2 CENTER = SCREEN_SIZE * 0.5f;
 
-static const int TimeToLive = 1;
+static const int TimeToLive = 50;
 static const int NumEnemies = 10;
 
 GLFWwindow* window;
@@ -246,9 +248,14 @@ void Update(double time, double deltaT)
         if (instance->isMarkedDeleted()) {
             printf("Deleted something %s\n", typeid(*instance).name());
 
-            if (dynamic_cast<Player*>(instance) || dynamic_cast<Bullet*>(instance)) {
+            if (dynamic_cast<Bullet*>(instance)) {
                 for (int i = 0; i < 50; i++) {
-                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef);
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 15);
+                    particles.push_back(part);
+                }
+            } else if (dynamic_cast<Player*>(instance)) {
+                for (int i = 0; i < 250; i++) {
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 30);
                     particles.push_back(part);
                 }
             }
@@ -267,7 +274,7 @@ void Update(double time, double deltaT)
         Particle* part = *it2;
         part->update(timef, deltaTf);
 
-        if (part->_creationTime + TimeToLive < time) {
+        if (part->_distance > TimeToLive) {
             it2 = particles.erase(it2);
             delete part;
         } else {
@@ -566,7 +573,7 @@ static Program* LoadShaders2()
 static Program* LoadShadersI() 
 {
     Shader* vertexShader = new Shader(Assets("Shader/instancingShader.vert").c_str(), GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader(Assets("Shader/debugShader.frag").c_str(), GL_FRAGMENT_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/instancingCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
@@ -690,7 +697,7 @@ static void LoadWoodenCrateAsset()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    // create and bind VAO 2
+    // create and bind VAO for drawing contours
     gWoodenCrate.program2 = LoadShaders2();
 
     glGenVertexArrays(1, &gWoodenCrate.vao2);
@@ -711,7 +718,7 @@ static void LoadWoodenCrateAsset()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    // bla
+    // create and bind VAO for instancing
     instancingProgram = LoadShadersI();
 
     glGenVertexArrays(1, &instancingVao);
@@ -751,7 +758,7 @@ static void LoadWoodenCrateAsset()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    // bla
+    // create and bind VAO for drawing instancing countours
     instancingProgram2 = LoadShaders2I();
 
     glGenVertexArrays(1, &instancingVao2);
