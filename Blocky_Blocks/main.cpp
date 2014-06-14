@@ -42,7 +42,7 @@ const vec2 SCREEN_SIZE(800, 600);
 const vec2 CENTER = SCREEN_SIZE * 0.5f;
 
 static const int TimeToLive = 50;
-static const int NumEnemies = 10;
+static const int NumEnemies = 0;
 
 GLFWwindow* window;
 Camera* camera;
@@ -81,11 +81,14 @@ void DrawInstance(const ModelInstance& inst);
 void DrawContour(const ModelInstance& inst);
 void DrawParticles(mat4* data, vec3* colors, int size);
 void DrawParticlesContour(mat4* data, vec3* colors, int size);
+void DrawInstanceDepth(const ModelInstance& inst);
+
 void cleanup();
 
 static void LoadWoodenCrateAsset();
 static Program* LoadShaders();
 static Program* LoadShaders2();
+static Program* LoadDepthShaders();
 static Texture2* LoadTexture();
 static void ImportScene(const std::string& pFile);
 static void LoadWorldAsset();
@@ -96,6 +99,12 @@ static btTriangleMesh* giveTriangleMesh(const struct aiMesh *pAIMesh);
 static const std::string Assets(const std::string& path) {
     return "Assets/" + path;
 }
+
+GLuint FramebufferName;
+GLuint depthTexture;
+Program* depthProgram;
+GLuint depthMatrix;
+GLuint shadowMappingVao;
 
 int main() 
 {
@@ -138,38 +147,62 @@ int main()
     //camera->setPosition(vec3(0,0,4));
     camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
 
-    gLight.position = camera->position();
-    gLight.position.y = gLight.position.y + 15.0f;
+    gLight.position = vec3(0,30,0);
+    //gLight.position.y = gLight.position.y + 15.0f;
     gLight.intensities = vec3(1, 1, 1) * 0.9f;
     gLight.attenuation = 0.0005f;
     gLight.ambientCoefficient = 0.75f;
-    gLight.direction=normalize(player->position()-camera->position());
+    //gLight.direction=normalize(player->position()-camera->position());
+    gLight.direction = vec3(0,-1,0);
     gLight.range = 100;
 
-    bool firstEnemy = true;
-    //spawn enemies
-    for (int i = 0; i < NumEnemies - currentEnemies; i++) {
-        Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
-        currentEnemies++;
-    }
-    firstEnemy = false;
+    glGenVertexArrays(1, &shadowMappingVao);
+    glBindVertexArray(shadowMappingVao);
+
+    depthProgram = LoadDepthShaders();
+    depthMatrix = depthProgram->uniform("depthMVP");
+
+    // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
+    FramebufferName = 0;
+    glGenFramebuffers(1, &FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+
+    // Depth texture. Slower than a depth buffer, but you can sample it later in your shader
+    glGenTextures(1, &depthTexture);
+    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT16, 1024, 1024, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
+
+    // No color output in the bound framebuffer, only depth.
+    glDrawBuffer(GL_NONE);
+
+
+    // Always check that our framebuffer is ok
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        return false;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     while (running && !glfwWindowShouldClose(window))
     {
         //printf("%i\n", particles.size());
         //move light
-        gLight.position = player->position();
-        gLight.position.y = gLight.position.y + 0.2f;
-        gLight.direction=normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));
+        /* gLight.position = player->position();
+        gLight.position.y = gLight.position.y + 5;
+        gLight.position.z = gLight.position.z + 5;
+        gLight.direction=normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));*/
 
         //spawn enemies
         for (int i = 0; i < NumEnemies - currentEnemies; i++) {
             Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
             currentEnemies++;
         }
-        // (2) clear the frame and depth buffer
-        vec3 bg = vec3(225,209,244) / 255.0f;
-        glClearColor(bg.r, bg.g, bg.b, 1);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // (3) compute the frame time delta
         time = glfwGetTime();
@@ -318,10 +351,33 @@ void Update(double time, double deltaT)
 
 void Draw() 
 {
+    std::list<ModelInstance*>::const_iterator it;
+
+    // Render to our framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glViewport(0,0,1024,1024);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(depthProgram->object());
+
+    for(it = gInstances.begin(); it != gInstances.end(); ++it){
+        DrawInstanceDepth(*(*it));
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
 
     glEnable(GL_CULL_FACE);
 
-    std::list<ModelInstance*>::const_iterator it;
+    // clear the frame and depth buffer
+    vec3 bg = vec3(225,209,244) / 255.0f;
+    glClearColor(bg.r, bg.g, bg.b, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // cel shader
     glUseProgram(player->asset->program->object());
@@ -377,6 +433,32 @@ void Draw()
 
     // clear
     glUseProgram(0);
+}
+
+void DrawInstanceDepth(const ModelInstance& inst){
+
+    glm::vec3 lightInvDir = glm::vec3(0,1,0);
+
+    /*glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
+    glm::mat4 depthViewMatrix = glm::lookAt(gLight.position, gLight.position-lightInvDir, glm::vec3(0,1,0));*/
+
+    glm::mat4 depthProjectionMatrix = glm::ortho<float>(-10,10,-10,10,-10,20);
+    glm::mat4 depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0,0,0), glm::vec3(0,1,0));
+
+    glm::mat4 depthModelMatrix = inst.transform;
+    glm::mat4 depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
+    glUniformMatrix4fv(depthMatrix, 1, GL_FALSE, &depthMVP[0][0]);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, inst.asset->indexBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, inst.asset->positionBuffer);
+    glEnableVertexAttribArray(depthProgram->attrib("vert"));
+    glVertexAttribPointer(depthProgram->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glDrawElements(inst.asset->drawType, inst.asset->drawCount, GL_UNSIGNED_SHORT, 0);
+
+    glDisableVertexAttribArray(depthProgram->attrib("vert"));
+
 }
 
 void DrawParticles(mat4* data, vec3* colors, int size)
@@ -453,6 +535,26 @@ void DrawInstance(const ModelInstance& inst)
     Material* material = inst.material;
     Program* program = asset->program;
 
+    glm::vec3 lightInvDir = glm::vec3(0,1,0);
+
+    /*glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
+    glm::mat4 depthViewMatrix = glm::lookAt(gLight.position, gLight.position-lightInvDir, glm::vec3(0,1,0));*/
+
+    glm::mat4 depthProjectionMatrix = glm::ortho<float>(-10,10,-10,10,-10,20);
+    glm::mat4 depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0,0,0), glm::vec3(0,1,0));
+
+    glm::mat4 depthModelMatrix = inst.transform;
+    glm::mat4 depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
+
+    glm::mat4 biasMatrix(
+        0.5, 0.0, 0.0, 0.0, 
+        0.0, 0.5, 0.0, 0.0,
+        0.0, 0.0, 0.5, 0.0,
+        0.5, 0.5, 0.5, 1.0
+        );
+
+    glm::mat4 depthBiasMVP = biasMatrix*depthMVP;
+
     // bind VAO
     glBindVertexArray(asset->vao);
 
@@ -462,10 +564,18 @@ void DrawInstance(const ModelInstance& inst)
 
     glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, glm::value_ptr(inst.transform));
 
+    glUniformMatrix4fv(program->uniform("depthBias"), 1, GL_FALSE, &depthBiasMVP[0][0]);
+    /*   glUniformMatrix4fv(program->uniform("view"), 1, GL_FALSE, glm::value_ptr(camera->viewMatrix()));
+    glUniform3fv(program->uniform("lightInvDir"), 1, glm::value_ptr(lightInvDir));*/
+
     // bind the texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, material->texture->object());
     glUniform1i(program->uniform("tex"), 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glUniform1i(program->uniform("shadowMap"), 1);
 
     glUniform3fv(program->uniform("light.position"), 1, glm::value_ptr(gLight.position));
     glUniform3fv(program->uniform("light.intensities"), 1, glm::value_ptr(gLight.intensities));
@@ -483,6 +593,7 @@ void DrawInstance(const ModelInstance& inst)
     // unbind vao and texture
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D, 1);
 }
 
 void DrawContour(const ModelInstance& inst) 
@@ -580,8 +691,8 @@ static Texture2* LoadTexture()
 
 static Program* LoadShaders() 
 {
-    Shader* vertexShader = new Shader(Assets("Shader/lightingVertexShader.vert").c_str(), GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader(Assets("Shader/celShader.frag").c_str(), GL_FRAGMENT_SHADER);
+    Shader* vertexShader = new Shader(Assets("Shader/shadowVertexShader.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/shadowCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
@@ -603,6 +714,12 @@ static Program* LoadShaders2I()
 {
     Shader* vertexShader = new Shader(Assets("Shader/instancingShader2.vert").c_str(), GL_VERTEX_SHADER);
     Shader* fragmentShader = new Shader(Assets("Shader/fragmentshader.frag").c_str(), GL_FRAGMENT_SHADER);
+    return new Program(vertexShader, fragmentShader);
+}
+static Program* LoadDepthShaders() 
+{
+    Shader* vertexShader = new Shader(Assets("Shader/depthShader.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/depthShader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
