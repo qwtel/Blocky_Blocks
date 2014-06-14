@@ -16,9 +16,11 @@ using namespace glm;
 struct ModelAsset {
     Program* program;
     Program* program2;
+    Program* shadowProgram;
 
     GLuint vao;
     GLuint vao2;
+    GLuint shadowVao;
 
     GLuint positionBuffer;
     GLuint normalBuffer;

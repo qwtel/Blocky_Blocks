@@ -1,8 +1,10 @@
 #version 330
 
 uniform mat4 model;
-uniform sampler2D tex;
 uniform vec3 cameraPosition;
+
+uniform sampler2D tex;
+uniform sampler2DShadow shadowMap;
 
 uniform struct Light {
 	vec3 position;
@@ -19,8 +21,6 @@ uniform struct Material {
 	float shininess;
 } material;
 
-//uniform vec3 LightPosition_worldspace;
-uniform sampler2DShadow shadowMap;
 
 vec2 poissonDisk[16] = vec2[]( 
    vec2( -0.94201624, -0.39906216 ), 
@@ -63,14 +63,17 @@ const float H = 1.0;
 
 void main() {
 	
-	float visibility = 1;
-	float bias = 0.005;
+	//float visibility = 1;
+	//float bias = 0.005;
 
+	float visibility = texture(shadowMap, vec3(shadowCoord.xy, (shadowCoord.z)/shadowCoord.w)); 
+	/*
 	for (int i=0;i<4;i++){
 
 		int index = i;
 		visibility -= 0.2*(1.0-texture( shadowMap, vec3(shadowCoord.xy + poissonDisk[index]/700.0,  (shadowCoord.z-bias)/shadowCoord.w) ));
 	}
+	*/
 
 	vec3 normal = normalize(transpose(inverse(mat3(model))) * fragNormal);
 	vec3 surfacePos = vec3(model * vec4(fragVert, 1));

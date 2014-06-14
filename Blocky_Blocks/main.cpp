@@ -106,7 +106,7 @@ static const std::string Assets(const std::string& path) {
 
 GLuint FramebufferName;
 GLuint depthTexture;
-Program* depthProgram;
+//Program* depthProgram;
 GLuint depthMatrix;
 GLuint shadowMappingVao;
 
@@ -164,12 +164,13 @@ int main()
     gLight.direction = vec3(0,-1,0);
     gLight.range = 100;
 
+    glEnable(GL_CULL_FACE);
 
     glGenVertexArrays(1, &shadowMappingVao);
     glBindVertexArray(shadowMappingVao);
 
-    depthProgram = LoadDepthShaders();
-    depthMatrix = depthProgram->uniform("depthMVP");
+    //depthProgram = LoadDepthShaders();
+    //depthMatrix = depthProgram->uniform("depthMVP");
 
     // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
     FramebufferName = 0;
@@ -191,12 +192,15 @@ int main()
 
     // No color output in the bound framebuffer, only depth.
     glDrawBuffer(GL_NONE);
-
+    glReadBuffer(GL_NONE);
 
     // Always check that our framebuffer is ok
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         return false;
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindVertexArray(0);
+
 
     glGenVertexArrays(1, &fuckvao);
     glBindVertexArray(fuckvao);
@@ -380,34 +384,33 @@ void Update(double time, double deltaT)
 
 void Draw() 
 {
-
-
-
     std::list<ModelInstance*>::const_iterator it;
 
     // Render to our framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
     glViewport(0,0,1024,1024);
 
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    glCullFace(GL_FRONT);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glUseProgram(depthProgram->object());
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
         DrawInstanceDepth(*(*it));
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
     glViewport(0,0,256,256);
 
-    // Clear the screen
+    glCullFace(GL_BACK);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+    // FUCK
+    // FUCK
+    // FUCK
+    // FUCK
     glBindVertexArray(fuckvao);
 
     // Use our shader
@@ -437,7 +440,6 @@ void Draw()
 
     glDisableVertexAttribArray(0);
 
-    glEnable(GL_CULL_FACE);
     glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
 
     // clear the frame and depth buffer
@@ -501,32 +503,31 @@ void Draw()
     //glUseProgram(0);
 }
 
+mat4 depthMVP;
+
 void DrawInstanceDepth(const ModelInstance& inst){
 
-    glBindVertexArray(shadowMappingVao);
+    ModelAsset* asset = inst.asset;
+    Program* program = asset->shadowProgram;
+
+    glUseProgram(program->object());
+    glBindVertexArray(asset->shadowVao);
 
     //glm::vec3 lightInvDir = glm::vec3(0.5,1,0);
 
-    glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 200.f);
-    glm::mat4 depthViewMatrix = glm::lookAt(vec3(0, 10, 0), player->position(), glm::vec3(0,1,0));
+    //mat4 depthProjectionMatrix = glm::perspective<float>(55.0f, 1.0f, 2.0f, 200.f);
+    //mat4 depthViewMatrix = glm::lookAt(vec3(0, 30, 0), player->position(), vec3(0,1,0));
 
-    //glm::mat4 depthProjectionMatrix = glm::ortho<float>(-100,100,-100,100,-100,100);
-    //glm::mat4 depthViewMatrix = glm::lookAt(vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(0,1,0));
+    glm::mat4 depthProjectionMatrix = glm::ortho<float>(-50,50,-50,50, 2, 200);
+    glm::mat4 depthViewMatrix = glm::lookAt(vec3(50,20,50), glm::vec3(0,0,0), glm::vec3(0,1,0));
 
-    glm::mat4 depthModelMatrix = inst.transform;
-    glm::mat4 depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
-    glUniformMatrix4fv(depthMatrix, 1, GL_FALSE, &depthMVP[0][0]);
+    mat4 depthModelMatrix = inst.transform;
+    depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
+    glUniformMatrix4fv(program->uniform("depthMVP"), 1, GL_FALSE, glm::value_ptr(depthMVP));
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, inst.asset->indexBuffer);
+    glDrawElements(inst.asset->drawType, inst.asset->drawCount, GL_UNSIGNED_INT, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, inst.asset->positionBuffer);
-    glEnableVertexAttribArray(depthProgram->attrib("vert"));
-    glVertexAttribPointer(depthProgram->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glDrawElements(inst.asset->drawType, inst.asset->drawCount, GL_UNSIGNED_SHORT, 0);
-
-    glDisableVertexAttribArray(depthProgram->attrib("vert"));
-
+    //glBindVertexArray(0);
 }
 
 void DrawParticles(mat4* data, vec3* colors, int size)
@@ -602,17 +603,6 @@ void DrawInstance(const ModelInstance& inst)
     ModelAsset* asset = inst.asset;
     Material* material = inst.material;
     Program* program = asset->program;
-
-    glm::vec3 lightInvDir = glm::vec3(0.5,1,0);
-
-    /*glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
-    glm::mat4 depthViewMatrix = glm::lookAt(gLight.position, gLight.position-lightInvDir, glm::vec3(0,1,0));*/
-
-    glm::mat4 depthProjectionMatrix = glm::ortho<float>(-10,10,-10,10,-10,20);
-    glm::mat4 depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0,0,0), glm::vec3(0,1,0));
-
-    glm::mat4 depthModelMatrix = inst.transform;
-    glm::mat4 depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
 
     glm::mat4 biasMatrix(
         0.5, 0.0, 0.0, 0.0, 
@@ -1000,6 +990,29 @@ static void LoadWoodenCrateAsset()
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // create and bind VAO for drawing instancing countours
+    gWoodenCrate.shadowProgram = LoadDepthShaders();
+
+    glGenVertexArrays(1, &gWoodenCrate.shadowVao);
+    glBindVertexArray(gWoodenCrate.shadowVao);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWoodenCrate.indexBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.positionBuffer);
+    glEnableVertexAttribArray(gWoodenCrate.shadowProgram->attrib("vert"));
+    glVertexAttribPointer(gWoodenCrate.shadowProgram->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    /*
+    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.normalBuffer);
+    glEnableVertexAttribArray(shadowProgramCube->attrib("vertNormal"));
+    glVertexAttribPointer(shadowProgramCube->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+    */
+
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 static void LoadWorldAsset()
@@ -1054,6 +1067,29 @@ static void LoadWorldAsset()
     glBindBuffer(GL_ARRAY_BUFFER, gWorld.normalBuffer);
     glEnableVertexAttribArray(gWorld.program->attrib("vertNormal"));
     glVertexAttribPointer(gWorld.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // create and bind VAO for drawing instancing countours
+    gWorld.shadowProgram = LoadDepthShaders();
+
+    glGenVertexArrays(1, &gWorld.shadowVao);
+    glBindVertexArray(gWorld.shadowVao);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWorld.indexBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gWorld.positionBuffer);
+    glEnableVertexAttribArray(gWorld.shadowProgram->attrib("vert"));
+    glVertexAttribPointer(gWorld.shadowProgram->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    /*
+    glBindBuffer(GL_ARRAY_BUFFER, gWorld.normalBuffer);
+    glEnableVertexAttribArray(shadowProgramWorld->attrib("vertNormal"));
+    glVertexAttribPointer(shadowProgramWorld->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+    */
 
     // unbind the VAO
     glBindVertexArray(0);
