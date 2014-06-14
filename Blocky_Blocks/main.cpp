@@ -74,6 +74,8 @@ GLuint instancingVao2;
 GLuint instancingVbo;
 GLuint instancingColorVbo;
 
+GLuint fuckvao;
+
 GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
 void Draw();
@@ -89,6 +91,8 @@ static void LoadWoodenCrateAsset();
 static Program* LoadShaders();
 static Program* LoadShaders2();
 static Program* LoadDepthShaders();
+static Program* LoadFuckShaders();
+
 static Texture2* LoadTexture();
 static void ImportScene(const std::string& pFile);
 static void LoadWorldAsset();
@@ -105,6 +109,10 @@ GLuint depthTexture;
 Program* depthProgram;
 GLuint depthMatrix;
 GLuint shadowMappingVao;
+
+
+GLuint vertexbuffer;
+Program* fuckProgram;
 
 int main() 
 {
@@ -156,6 +164,7 @@ int main()
     gLight.direction = vec3(0,-1,0);
     gLight.range = 100;
 
+
     glGenVertexArrays(1, &shadowMappingVao);
     glBindVertexArray(shadowMappingVao);
 
@@ -188,6 +197,26 @@ int main()
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         return false;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glGenVertexArrays(1, &fuckvao);
+    glBindVertexArray(fuckvao);
+
+    fuckProgram = LoadFuckShaders();
+
+    static const GLfloat g_vertex_buffer_data[] = {
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        1.0f,  1.0f, 0.0f,
+    };
+
+    glGenBuffers(1, &vertexbuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
+
+    glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
 
     while (running && !glfwWindowShouldClose(window))
     {
@@ -351,6 +380,9 @@ void Update(double time, double deltaT)
 
 void Draw() 
 {
+
+
+
     std::list<ModelInstance*>::const_iterator it;
 
     // Render to our framebuffer
@@ -370,14 +402,48 @@ void Draw()
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
+    //glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
+    glViewport(0,0,256,256);
+
+    // Clear the screen
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
+    glBindVertexArray(fuckvao);
+
+    // Use our shader
+    glUseProgram(fuckProgram->object());
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+
+    // Bind our texture in Texture Unit 0
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    // Set our "renderedTexture" sampler to user Texture Unit 0
+    glUniform1i(fuckProgram->uniform("texture"), 3);
+
+    // 1rst attribute buffer : vertices
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+        3,                  // size
+        GL_FLOAT,           // type
+        GL_FALSE,           // normalized?
+        0,                  // stride
+        (void*)0            // array buffer offset
+        );
+
+    // Draw the triangle !
+    glDrawArrays(GL_TRIANGLES, 0, 6); // 3 indices starting at 0 -> 1 triangle
+
+    glDisableVertexAttribArray(0);
 
     glEnable(GL_CULL_FACE);
+    glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
 
     // clear the frame and depth buffer
-    vec3 bg = vec3(225,209,244) / 255.0f;
-    glClearColor(bg.r, bg.g, bg.b, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //vec3 bg = vec3(225,209,244) / 255.0f;
+    //glClearColor(bg.r, bg.g, bg.b, 1);
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // cel shader
     glUseProgram(player->asset->program->object());
@@ -385,7 +451,7 @@ void Draw()
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
-        DrawInstance(*(*it));
+    DrawInstance(*(*it));
     }
 
     // contour shader
@@ -394,56 +460,58 @@ void Draw()
     glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
-        DrawContour(*(*it));
+    DrawContour(*(*it));
     }
 
     // "particle" shader
 
     const int size = particles.size();
     if (size > 0) {
-        mat4* data = new mat4[size];
-        vec3* colors = new vec3[size];
+    mat4* data = new mat4[size];
+    vec3* colors = new vec3[size];
 
-        std::list<Particle*>::const_iterator it;
-        int n = 0;
-        for(it = particles.begin(); it != particles.end(); ++it) {
-            Particle* p = (*it);
-            data[n] = mat4(p->transform);
-            colors[n] = vec3(p->material->color);
-            n++;
-        }
+    std::list<Particle*>::const_iterator it;
+    int n = 0;
+    for(it = particles.begin(); it != particles.end(); ++it) {
+    Particle* p = (*it);
+    data[n] = mat4(p->transform);
+    colors[n] = vec3(p->material->color);
+    n++;
+    }
 
-        // cel shader
-        glUseProgram(instancingProgram->object());
-        glCullFace(GL_BACK);
-        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    // cel shader
+    glUseProgram(instancingProgram->object());
+    glCullFace(GL_BACK);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
-        DrawParticles(data, colors, size);
+    DrawParticles(data, colors, size);
 
-        // contour shader
-        glUseProgram(instancingProgram2->object());
-        glCullFace(GL_FRONT);
-        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    // contour shader
+    glUseProgram(instancingProgram2->object());
+    glCullFace(GL_FRONT);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
-        DrawParticlesContour(data, colors, size);
+    DrawParticlesContour(data, colors, size);
 
-        delete data;
-        delete colors;
+    delete data;
+    delete colors;
     }
 
     // clear
-    glUseProgram(0);
+    //glUseProgram(0);
 }
 
 void DrawInstanceDepth(const ModelInstance& inst){
 
-    glm::vec3 lightInvDir = glm::vec3(0,1,0);
+    glBindVertexArray(inst.asset->vao);
 
-    /*glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
-    glm::mat4 depthViewMatrix = glm::lookAt(gLight.position, gLight.position-lightInvDir, glm::vec3(0,1,0));*/
+    //glm::vec3 lightInvDir = glm::vec3(0.5,1,0);
 
-    glm::mat4 depthProjectionMatrix = glm::ortho<float>(-10,10,-10,10,-10,20);
-    glm::mat4 depthViewMatrix = glm::lookAt(lightInvDir, glm::vec3(0,0,0), glm::vec3(0,1,0));
+    glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 200.f);
+    glm::mat4 depthViewMatrix = glm::lookAt(vec3(0, 10, 0), player->position(), glm::vec3(0,1,0));
+
+    //glm::mat4 depthProjectionMatrix = glm::ortho<float>(-100,100,-100,100,-100,100);
+    //glm::mat4 depthViewMatrix = glm::lookAt(vec3(0,0,0), glm::vec3(0,0,0), glm::vec3(0,1,0));
 
     glm::mat4 depthModelMatrix = inst.transform;
     glm::mat4 depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
@@ -535,7 +603,7 @@ void DrawInstance(const ModelInstance& inst)
     Material* material = inst.material;
     Program* program = asset->program;
 
-    glm::vec3 lightInvDir = glm::vec3(0,1,0);
+    glm::vec3 lightInvDir = glm::vec3(0.5,1,0);
 
     /*glm::mat4 depthProjectionMatrix = glm::perspective<float>(45.0f, 1.0f, 2.0f, 50.0f);
     glm::mat4 depthViewMatrix = glm::lookAt(gLight.position, gLight.position-lightInvDir, glm::vec3(0,1,0));*/
@@ -720,6 +788,13 @@ static Program* LoadDepthShaders()
 {
     Shader* vertexShader = new Shader(Assets("Shader/depthShader.vert").c_str(), GL_VERTEX_SHADER);
     Shader* fragmentShader = new Shader(Assets("Shader/depthShader.frag").c_str(), GL_FRAGMENT_SHADER);
+    return new Program(vertexShader, fragmentShader);
+}
+
+static Program* LoadFuckShaders() 
+{
+    Shader* vertexShader = new Shader(Assets("Shader/fuck.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/fuck.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 
