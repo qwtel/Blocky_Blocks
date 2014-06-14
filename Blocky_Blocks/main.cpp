@@ -503,7 +503,7 @@ void Draw()
 
 void DrawInstanceDepth(const ModelInstance& inst){
 
-    glBindVertexArray(inst.asset->vao);
+    glBindVertexArray(shadowMappingVao);
 
     //glm::vec3 lightInvDir = glm::vec3(0.5,1,0);
 
