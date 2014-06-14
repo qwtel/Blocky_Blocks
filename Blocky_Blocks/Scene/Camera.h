@@ -13,6 +13,8 @@ public:
     Camera(Player* player);
     ~Camera(void);
 
+    mat4 projectionMatrix() const;
+    mat4 viewMatrix() const;
     mat4 matrix() const;
     mat4 orientation() const;
 

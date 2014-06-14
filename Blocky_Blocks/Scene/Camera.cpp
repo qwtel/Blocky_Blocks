@@ -23,6 +23,17 @@ mat4 Camera::matrix() const {
     return projection * view;
 }
 
+mat4 Camera::projectionMatrix() const {
+    mat4 projection = perspective(_fieldOfView, _viewportAspectRatio, _nearPlane, _farPlane);
+    return projection;
+}
+
+mat4 Camera::viewMatrix() const {
+    vec3 center = _target->position() + vec3(0,2,0); // look a bit above the target
+    mat4 view = glm::lookAt(position(), center, vec3(0,1,0));
+    return view;
+}
+
 // @Depriacted
 mat4 Camera::orientation() const {
     //mat4 orientation;
