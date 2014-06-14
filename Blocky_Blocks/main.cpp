@@ -142,7 +142,7 @@ int main()
     gLight.position.y = gLight.position.y + 15.0f;
     gLight.intensities = vec3(1, 1, 1) * 0.9f;
     gLight.attenuation = 0.0005f;
-    gLight.ambientCoefficient = 0.1f;
+    gLight.ambientCoefficient = 0.75f;
     gLight.direction=normalize(player->position()-camera->position());
     gLight.range = 100;
 
@@ -270,12 +270,12 @@ void Update(double time, double deltaT)
 
             if (dynamic_cast<Bullet*>(instance)) {
                 for (int i = 0; i < 50; i++) {
-                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 15);
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 10);
                     particles.push_back(part);
                 }
             } else if (dynamic_cast<Player*>(instance)) {
                 for (int i = 0; i < 250; i++) {
-                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 30);
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 33);
                     particles.push_back(part);
                 }
             }

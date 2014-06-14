@@ -18,10 +18,13 @@ static const vec3 LeftRotate = -ZAxis;
 static const vec3 Right = -Left;
 static const vec3 RightRotate = -LeftRotate;
 
+static const float DegreePerSecond = 360.0f;
+static const float Velocity = 100.f;
+
 Bullet::Bullet(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld, Player* owner) :
     ModelInstance(instances, collisionWorld),
     _posi(),
-    _velocity(50.0f), // todo
+    _velocity(Velocity), // todo
     _direction(),
     _rotateAngle(),
     _owner(owner)
@@ -29,10 +32,10 @@ Bullet::Bullet(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instanc
     _rotateAngle = rand() % 360 + 1;
     // printf("%f\n", _rotateAngle);
     asset = ma;
-    transform = glm::scale(mat4(), vec3(0.5));
+    transform = glm::scale(mat4(), vec3(0.33));
     material = mat;
 
-    btBoxShape* box = new btBoxShape(btVector3(0.5,0.5,0.5));
+    btBoxShape* box = new btBoxShape(btVector3(0.33,0.33,0.33));
     box->setMargin(0.f);
 
     collisionObject = new btCollisionObject();
@@ -76,9 +79,7 @@ void Bullet::update(float time, float deltaT)
     transform = glm::rotate(transform, _verticalAngle, vec3(1,0,0));
 
     if (_rotateDirection != vec3(0,0,0)) {
-        static const float degreePerSecond = 360.0f;
-
-        _rotateAngle += deltaT * degreePerSecond;
+        _rotateAngle += deltaT * DegreePerSecond;
         _rotateAngle = fmodf(_rotateAngle, 360.0f);
 
         if(_rotateAngle < 0.0f)
