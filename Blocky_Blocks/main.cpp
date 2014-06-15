@@ -41,6 +41,8 @@ using namespace glm;
 const vec2 SCREEN_SIZE(800, 600);
 const vec2 CENTER = SCREEN_SIZE * 0.5f;
 
+static const int SHADOWMAP_SIZE = 2048;
+
 static const int TimeToLive = 50;
 static const int NumEnemies = 0;
 
@@ -159,10 +161,10 @@ int main()
     //gLight.position.y = gLight.position.y + 15.0f;
     gLight.intensities = vec3(1, 1, 1) * 0.9f;
     gLight.attenuation = 0.0005f;
-    gLight.ambientCoefficient = 0.75f;
+    gLight.ambientCoefficient = 0.50f;
     //gLight.direction=normalize(player->position()-camera->position());
     gLight.direction = vec3(0,-1,0);
-    gLight.range = 100;
+    gLight.range = 200;
 
     glEnable(GL_CULL_FACE);
 
@@ -180,13 +182,14 @@ int main()
     // Depth texture. Slower than a depth buffer, but you can sample it later in your shader
     glGenTextures(1, &depthTexture);
     glBindTexture(GL_TEXTURE_2D, depthTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT16, 1024, 1024, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_DEPTH_COMPONENT, SHADOWMAP_SIZE, SHADOWMAP_SIZE, 0,GL_DEPTH_COMPONENT, GL_FLOAT, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(vec4(1, 1, 1, 1)));
 
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthTexture, 0);
 
@@ -226,10 +229,10 @@ int main()
     {
         //printf("%i\n", particles.size());
         //move light
-        /* gLight.position = player->position();
-        gLight.position.y = gLight.position.y + 5;
-        gLight.position.z = gLight.position.z + 5;
-        gLight.direction=normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));*/
+        //gLight.position.z = gLight.position.z + 5;
+        gLight.direction = normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));
+        gLight.position = player->position() + gLight.direction * 2.f;
+        gLight.position.y += 3.f;
 
         //spawn enemies
         for (int i = 0; i < NumEnemies - currentEnemies; i++) {
@@ -388,7 +391,7 @@ void Draw()
 
     // Render to our framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    glViewport(0,0,1024,1024);
+    glViewport(0,0,SHADOWMAP_SIZE,SHADOWMAP_SIZE);
 
     glCullFace(GL_FRONT);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -453,7 +456,7 @@ void Draw()
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
-    DrawInstance(*(*it));
+        DrawInstance(*(*it));
     }
 
     // contour shader
@@ -462,48 +465,60 @@ void Draw()
     glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
-    DrawContour(*(*it));
+        DrawContour(*(*it));
     }
 
     // "particle" shader
 
     const int size = particles.size();
     if (size > 0) {
-    mat4* data = new mat4[size];
-    vec3* colors = new vec3[size];
+        mat4* data = new mat4[size];
+        vec3* colors = new vec3[size];
 
-    std::list<Particle*>::const_iterator it;
-    int n = 0;
-    for(it = particles.begin(); it != particles.end(); ++it) {
-    Particle* p = (*it);
-    data[n] = mat4(p->transform);
-    colors[n] = vec3(p->material->color);
-    n++;
-    }
+        std::list<Particle*>::const_iterator it;
+        int n = 0;
+        for(it = particles.begin(); it != particles.end(); ++it) {
+            Particle* p = (*it);
+            data[n] = mat4(p->transform);
+            colors[n] = vec3(p->material->color);
+            n++;
+        }
 
-    // cel shader
-    glUseProgram(instancingProgram->object());
-    glCullFace(GL_BACK);
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+        // cel shader
+        glUseProgram(instancingProgram->object());
+        glCullFace(GL_BACK);
+        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
-    DrawParticles(data, colors, size);
+        DrawParticles(data, colors, size);
 
-    // contour shader
-    glUseProgram(instancingProgram2->object());
-    glCullFace(GL_FRONT);
-    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        // contour shader
+        glUseProgram(instancingProgram2->object());
+        glCullFace(GL_FRONT);
+        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
-    DrawParticlesContour(data, colors, size);
+        DrawParticlesContour(data, colors, size);
 
-    delete data;
-    delete colors;
+        delete data;
+        delete colors;
     }
 
     // clear
     //glUseProgram(0);
 }
 
-mat4 depthMVP;
+static mat4 giveThatThing(const ModelInstance& inst) {
+    //glm::vec3 lightInvDir = glm::vec3(0.5,1,0);
+
+    mat4 depthProjectionMatrix = glm::perspective<float>(90.0f, 1.0f, 2.0f, 200.f);
+    mat4 depthViewMatrix = glm::lookAt(gLight.position, gLight.position + gLight.range * gLight.direction, vec3(0,1,0));
+
+    //mat4 depthProjectionMatrix = glm::ortho<float>(-89,89,-89,89, 2, 200);
+    //mat4 depthViewMatrix = glm::lookAt(vec3(89,10,0), vec3(0,0,0), vec3(0,1,0));
+
+    mat4 depthModelMatrix = inst.transform;
+
+    return depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
+}
 
 void DrawInstanceDepth(const ModelInstance& inst){
 
@@ -513,16 +528,8 @@ void DrawInstanceDepth(const ModelInstance& inst){
     glUseProgram(program->object());
     glBindVertexArray(asset->shadowVao);
 
-    //glm::vec3 lightInvDir = glm::vec3(0.5,1,0);
+    mat4 depthMVP = giveThatThing(inst);
 
-    //mat4 depthProjectionMatrix = glm::perspective<float>(55.0f, 1.0f, 2.0f, 200.f);
-    //mat4 depthViewMatrix = glm::lookAt(vec3(0, 30, 0), player->position(), vec3(0,1,0));
-
-    glm::mat4 depthProjectionMatrix = glm::ortho<float>(-50,50,-50,50, 2, 200);
-    glm::mat4 depthViewMatrix = glm::lookAt(vec3(50,20,50), glm::vec3(0,0,0), glm::vec3(0,1,0));
-
-    mat4 depthModelMatrix = inst.transform;
-    depthMVP = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
     glUniformMatrix4fv(program->uniform("depthMVP"), 1, GL_FALSE, glm::value_ptr(depthMVP));
 
     glDrawElements(inst.asset->drawType, inst.asset->drawCount, GL_UNSIGNED_INT, 0);
@@ -611,7 +618,9 @@ void DrawInstance(const ModelInstance& inst)
         0.5, 0.5, 0.5, 1.0
         );
 
-    glm::mat4 depthBiasMVP = biasMatrix*depthMVP;
+    mat4 depthMVP = giveThatThing(inst);
+
+    glm::mat4 depthBiasMVP = biasMatrix * depthMVP;
 
     // bind VAO
     glBindVertexArray(asset->vao);

@@ -63,10 +63,25 @@ const float H = 1.0;
 
 void main() {
 	
-	//float visibility = 1;
-	//float bias = 0.005;
+	/*
+	float visibility = 1;
+	float bias = 0.005;
 
-	float visibility = texture(shadowMap, vec3(shadowCoord.xy, (shadowCoord.z)/shadowCoord.w)); 
+	if ( texture( shadowMap, (shadowCoord.xy / shadowCoord.w) ).z  < (shadowCoord.z-bias) / shadowCoord.w ) {
+	    visibility = 0.5;
+	}
+	*/
+
+	float bias = 0.0005;
+
+	float visibility = 1;
+	
+	if (shadowCoord.w > 0) {
+		visibility = texture(shadowMap, vec3(shadowCoord.xy / shadowCoord.w, (shadowCoord.z - bias) / shadowCoord.w));
+		visibility += 0.75;
+		visibility = min(visibility, 1);
+	}
+
 	/*
 	for (int i=0;i<4;i++){
 
@@ -84,7 +99,7 @@ void main() {
 	float cosDir = dot(surfaceToLight, -light.direction);
 	float spotEffect = smoothstep(0.8,0.98, cosDir);
  
-	float heightAttenuation = smoothstep(light.range, 0.0f, length(surfaceToLight));
+	float heightAttenuation = smoothstep(light.range, 0.0, length(surfaceToLight));
 	//ambient
 	vec3 ambient = light.ambientCoefficient * (surfaceColor.rgb * light.intensities);
 
