@@ -46,6 +46,7 @@ map<string,string> cfg = initCfg();
 
 const vec2 SCREEN_SIZE(atoi(cfg.find("screenWidth")->second.c_str()), atoi(cfg.find("screenHeight")->second.c_str()));
 const vec2 CENTER = SCREEN_SIZE * 0.5f;
+static const bool FULLSCREEN = atoi(cfg.find("fullscreen")->second.c_str()) == 0 ? false : true;
 
 static const int SHADOWMAP_SIZE = atoi(cfg.find("shadowMapSize")->second.c_str());
 
@@ -825,8 +826,14 @@ GLFWwindow* openWindow(int width, int height)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 2);
 
-    // (3) open window
-    GLFWwindow* window = glfwCreateWindow(width, height, "Hello, CGUE!", nullptr, nullptr);
+
+    GLFWmonitor* fullscreen = nullptr;
+    if(FULLSCREEN){
+        fullscreen = glfwGetPrimaryMonitor();
+    }
+    // (3) open window  
+    GLFWwindow* window = glfwCreateWindow(width, height, "Blocky Blocks", fullscreen, nullptr);
+
     if (!window)
     {
         glfwTerminate();
