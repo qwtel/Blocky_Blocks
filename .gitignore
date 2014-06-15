@@ -7,7 +7,6 @@
 *.ilk
 *.idb
 *.pdb
-*.obj
 *.exe
 *.*build
 *.lastbuildstate
