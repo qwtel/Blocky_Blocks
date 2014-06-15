@@ -257,6 +257,10 @@ int main()
         }
         else if(lost){
 
+            if(time-timeStamp >= 0.5){
+                gLight.intensities = vec3(1,0,0);
+                gLight.position = vec3(0,100,0);
+            }
         }
         //spawn enemies
         else{
