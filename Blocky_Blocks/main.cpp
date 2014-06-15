@@ -61,6 +61,8 @@ static const bool DrawContours = atoi(cfg.find("drawContours")->second.c_str()) 
 
 static const bool BlockyDoomMode = atoi(cfg.find("blockyDoomMode")->second.c_str()) == 0 ? false : true;
 
+static const bool GodMode = atoi(cfg.find("godMode")->second.c_str()) == 0 ? false : true;
+
 GLFWwindow* window;
 Camera* camera;
 
@@ -167,7 +169,7 @@ int main()
     btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
 
     // SimpleBroadphase is a brute force alternative, performing N^2 aabb overlap tests
-    btSimpleBroadphase*	broadphase = new btSimpleBroadphase;
+    btDbvtBroadphase*	broadphase = new btDbvtBroadphase();
 
     collisionWorld = new btCollisionWorld(dispatcher, broadphase, collisionConfiguration);
 
@@ -176,15 +178,17 @@ int main()
     LoadWorldAsset();
     CreateWorldInstance();
 
-
     //initialise cow
-    ImportScene(Assets("Models/cow.model"));
+    ImportScene(Assets("Models/teapot.obj"));
     LoadCowAsset();
     CreateCowInstance();
 
     player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219),"Texture/noise.png"), &gInstances, collisionWorld);
 
     camera = new Camera(player);
+
+    // generate view frustum
+    // TODO
 
     double time = glfwGetTime();
 
@@ -205,9 +209,6 @@ int main()
 
     glGenVertexArrays(1, &shadowMappingVao);
     glBindVertexArray(shadowMappingVao);
-
-    //depthProgram = LoadDepthShaders();
-    //depthMatrix = depthProgram->uniform("depthMVP");
 
     // The framebuffer, which regroups 0, 1, or more textures, and 0 or 1 depth buffer.
     FramebufferName = 0;
@@ -233,8 +234,7 @@ int main()
     glReadBuffer(GL_NONE);
 
     // Always check that our framebuffer is ok
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        return false;
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) return false;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glBindVertexArray(0);
@@ -262,39 +262,6 @@ int main()
 
     while (running && !glfwWindowShouldClose(window))
     {
-        //printf("%i\n", particles.size());
-        //move light
-        gLight.position.z = gLight.position.z + 5;
-        gLight.direction = normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));
-        gLight.position = player->position() + gLight.direction * 2.f;
-        gLight.position.y += 3.f;
-
-        //fireworks
-        if(won){
-            if(time - timeStamp >= 0.3){
-
-                Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
-                timeStamp = time;
-            }
-
-        }
-        else if(lost){
-
-            if(time-timeStamp >= 0.5){
-                /* gLight.position = player->position();
-                gLight.position.y += 5;
-                gLight.direction = vec3(0,-1,0);*/
-            }
-        }
-        //spawn enemies
-        else{
-
-            for (int i = 0; i < NumEnemies - currentEnemies; i++) {
-                Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
-                currentEnemies++;
-            }
-        }
-
         // (3) compute the frame time delta
         time = glfwGetTime();
         double deltaT = time - lastTime;
@@ -329,6 +296,40 @@ void update(double time, double deltaT)
 {
     float deltaTf = float(deltaT);
     float timef = float(time);
+
+    //printf("%i\n", particles.size());
+    //move light
+    gLight.position.z = gLight.position.z + 5;
+    gLight.direction = normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));
+    gLight.position = player->position() + gLight.direction * 2.f;
+    gLight.position.y += 3.f;
+
+    //fireworks
+    if(won){
+        if(time - timeStamp >= 0.3){
+
+            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
+            timeStamp = time;
+        }
+
+    }
+    else if(lost){
+
+        if(time-timeStamp >= 0.5){
+            /* gLight.position = player->position();
+            gLight.position.y += 5;
+            gLight.direction = vec3(0,-1,0);*/
+        }
+    }
+    //spawn enemies
+    else{
+
+        for (int i = 0; i < NumEnemies - currentEnemies; i++) {
+            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
+            currentEnemies++;
+        }
+    }
+
 
     collisionWorld->performDiscreteCollisionDetection();
 
@@ -392,28 +393,28 @@ void update(double time, double deltaT)
                 instance->markDeleted();
             }
         }
-        if(instance->getHit() && lost == false){
+
+        if(instance->getHit() && lost == false && !GodMode){
 
             lost = true;
             timeStamp = time;
+
             //death animation
             for (int i = 0; i < 250; i++) {
-                Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 33);
+                Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 40);
                 particles.push_back(part);
-
             }
         }
+
         if(lost && timeStamp != 0 || won && timeStamp != 0){
-
             if(typeid(*instance) == typeid(Enemy)){
-
                 dynamic_cast<Enemy*>(instance)->stopShooting();
             }
         }
 
-
         if (instance->isMarkedDeleted()) {
-            printf("Deleted something %s\n", typeid(*instance).name());
+            printf("Deleted something of %s\n", typeid(*instance).name());
+
             if(typeid(*instance) == typeid(Enemy)){
                 currentEnemies--;
                 killCounter++;       
@@ -421,12 +422,12 @@ void update(double time, double deltaT)
 
             if (dynamic_cast<Bullet*>(instance)) {
                 for (int i = 0; i < 50; i++) {
-                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 15);
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 20);
                     particles.push_back(part);
                 }
             } else if (dynamic_cast<Player*>(instance)) {
                 for (int i = 0; i < 250; i++) {
-                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 33);
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 40);
                     particles.push_back(part);
                 }
             }
@@ -486,7 +487,7 @@ void draw()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
-        if((*it)->getHit()){
+        if((*it)->getHit() && !GodMode){
             continue;
         }
         drawInstanceDepth(*(*it));
@@ -544,7 +545,7 @@ void draw()
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
-        if((*it)->getHit()){
+        if((*it)->getHit() && !GodMode){
             continue;
         }
         drawInstance(*(*it));
@@ -557,7 +558,7 @@ void draw()
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
         for(it = gInstances.begin(); it != gInstances.end(); ++it){
-            if((*it)->getHit()){
+            if((*it)->getHit() && !GodMode){
                 continue;
             }
             drawContour(*(*it));
@@ -1306,7 +1307,7 @@ static void LoadCowAsset()
 
 static void CreateCowInstance()
 {
-    Material* m = GiveMaterial(vec3(255,255,255),"Texture/cow.jpg");
+    Material* m = GiveMaterial(vec3(255,255,255),"Texture/noise.png");
     btTriangleMesh* triMesh = giveTriangleMesh(meshes[2]->mesh);
     cow = new Cow(&gCow, m, triMesh, &gInstances, collisionWorld);
 }

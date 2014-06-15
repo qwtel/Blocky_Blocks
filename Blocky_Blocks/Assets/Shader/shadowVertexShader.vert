@@ -13,16 +13,15 @@ out vec3 fragVert;
 out vec3 fragNormal;
 out vec2 fragTexCoord;
 out vec4 fragTargetTexCoord;
-
 out vec4 shadowCoord;
 
 void main() {
-	fragTexCoord = vertTexCoord;
-	fragNormal = vertNormal;
-	fragVert = vert;
+    fragTexCoord = vertTexCoord;
+    fragNormal = vertNormal;
+    fragVert = vert;
 
-	gl_Position = camera * model * vec4(vert, 1);
+    gl_Position = camera * model * vec4(vert, 1);
 
-	shadowCoord = depthBias * vec4(vert, 1);
-	fragTargetTexCoord = texGenMatrix * vec4(vert, 1);
+    shadowCoord = depthBias * vec4(vert, 1);
+    fragTargetTexCoord = texGenMatrix * vec4(vert, 1);
 }

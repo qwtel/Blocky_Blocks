@@ -33,7 +33,7 @@ static const float FallSpeed = 16.0; //units per second
 
 Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) :
     ModelInstance(instances, collisionWorld),
-    _position(0, 40, 0),
+    _position(0, 80, 0),
     _horizontalAngle(0.0f),
    _verticalAngle(0.0f),
     _rotateDirection(),
@@ -263,6 +263,6 @@ void Player::collide(ModelInstance* other, vec3 pA, vec3 pB) {
         //_position.y = _position.y + FallSpeed * _deltaT;
 
     } else {
-        fprintf(stderr, "Collision with unkown type");
+        printf("Collision with unkown type\n");
     }
 }
