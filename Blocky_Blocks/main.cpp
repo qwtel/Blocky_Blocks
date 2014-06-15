@@ -50,9 +50,13 @@ static const int SHADOWMAP_SIZE = atoi(cfg.find("shadowMapSize")->second.c_str()
 
 static const int TimeToLive = atoi(cfg.find("particleTTL")->second.c_str());
 static const int NumEnemies = atoi(cfg.find("numEnemies")->second.c_str());
+
 static const int KillsToWin = atoi(cfg.find("killsToWin")->second.c_str());
+
 static const bool ShowShadowMap = atoi(cfg.find("showShadowMap")->second.c_str()) == 0 ? false : true;
+
 static const bool DrawContours = atoi(cfg.find("drawContours")->second.c_str()) == 0 ? false : true;
+
 static const bool BlockyDoomMode = atoi(cfg.find("blockyDoomMode")->second.c_str()) == 0 ? false : true;
 
 GLFWwindow* window;
@@ -91,14 +95,16 @@ GLuint instancingColorVbo;
 
 GLuint fuckvao;
 
+Texture2* targetTexture;
+
 GLFWwindow* openWindow(int width, int height);
-void Update(double time, double deltaT);
-void Draw();
-void DrawInstance(const ModelInstance& inst);
+void update(double time, double deltaT);
+void draw();
+void drawInstance(const ModelInstance& inst);
 void drawContour(const ModelInstance& inst);
-void DrawParticles(mat4* data, vec3* colors, int size);
+void drawParticles(mat4* data, vec3* colors, int size);
 void drawParticlesContour(mat4* data, vec3* colors, int size);
-void DrawInstanceDepth(const ModelInstance& inst);
+void drawInstanceDepth(const ModelInstance& inst);
 
 void cleanup();
 
@@ -147,6 +153,8 @@ int main()
     // initialise the gWoodenCrate asset
     LoadWoodenCrateAsset();
 
+    targetTexture = LoadTexture();
+
     // initialise bullet
     btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
     btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
@@ -167,7 +175,6 @@ int main()
 
     double time = glfwGetTime();
 
-
     //camera->setPosition(vec3(0,0,4));
     camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
 
@@ -178,7 +185,7 @@ int main()
     gLight.ambientCoefficient = BlockyDoomMode ? 0.f : 0.50f;
     //gLight.direction=normalize(player->position()-camera->position());
     gLight.direction = vec3(0,-1,0);
-    gLight.range = 100;
+    gLight.range = 200;
 
     glEnable(GL_CULL_FACE);
 
@@ -283,10 +290,10 @@ int main()
         running = !glfwGetKey(window, GLFW_KEY_ESCAPE);
 
         // (5) Update all game components
-        Update(time, deltaT);
+        update(time, deltaT);
 
         // (6) draw all game components
-        Draw();
+        draw();
         // (6.5) swap buffers
         glfwSwapBuffers(window);
 
@@ -303,7 +310,7 @@ int main()
     glfwTerminate();
 }
 
-void Update(double time, double deltaT) 
+void update(double time, double deltaT) 
 {
     float deltaTf = float(deltaT);
     float timef = float(time);
@@ -450,7 +457,7 @@ void Update(double time, double deltaT)
     }
 }
 
-void Draw() 
+void draw() 
 {
     std::list<ModelInstance*>::const_iterator it;
 
@@ -467,7 +474,7 @@ void Draw()
         if((*it)->getHit()){
             continue;
         }
-        DrawInstanceDepth(*(*it));
+        drawInstanceDepth(*(*it));
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -525,7 +532,7 @@ void Draw()
         if((*it)->getHit()){
             continue;
         }
-        DrawInstance(*(*it));
+        drawInstance(*(*it));
     }
 
     if (DrawContours) {
@@ -563,7 +570,7 @@ void Draw()
         glCullFace(GL_BACK);
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
-        DrawParticles(data, colors, size);
+        drawParticles(data, colors, size);
 
         if (DrawContours) {
             // contour shader
@@ -588,15 +595,12 @@ static mat4 giveThatThing(const ModelInstance& inst) {
     mat4 depthProjectionMatrix = glm::perspective<float>(90.0f, 1.0f, 2.0f, 200.f);
     mat4 depthViewMatrix = glm::lookAt(gLight.position, gLight.position + gLight.range * gLight.direction, vec3(0,1,0));
 
-    //mat4 depthProjectionMatrix = glm::ortho<float>(-89,89,-89,89, 2, 200);
-    //mat4 depthViewMatrix = glm::lookAt(vec3(89,10,0), vec3(0,0,0), vec3(0,1,0));
-
     mat4 depthModelMatrix = inst.transform;
 
     return depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
 }
 
-void DrawInstanceDepth(const ModelInstance& inst){
+void drawInstanceDepth(const ModelInstance& inst){
 
     ModelAsset* asset = inst.asset;
     Program* program = asset->shadowProgram;
@@ -613,7 +617,7 @@ void DrawInstanceDepth(const ModelInstance& inst){
     //glBindVertexArray(0);
 }
 
-void DrawParticles(mat4* data, vec3* colors, int size)
+void drawParticles(mat4* data, vec3* colors, int size)
 {
     glBindBuffer(GL_ARRAY_BUFFER, instancingVbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * size, &data[0], GL_DYNAMIC_DRAW);
@@ -681,13 +685,13 @@ void drawParticlesContour(mat4* data, vec3* colors, int size)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void DrawInstance(const ModelInstance& inst)
+void drawInstance(const ModelInstance& inst)
 {
     ModelAsset* asset = inst.asset;
     Material* material = inst.material;
     Program* program = asset->program;
 
-    glm::mat4 biasMatrix(
+    mat4 biasMatrix = mat4(
         0.5, 0.0, 0.0, 0.0, 
         0.0, 0.5, 0.0, 0.0,
         0.0, 0.0, 0.5, 0.0,
@@ -695,8 +699,22 @@ void DrawInstance(const ModelInstance& inst)
         );
 
     mat4 depthMVP = giveThatThing(inst);
+    mat4 depthBiasMVP = biasMatrix * depthMVP;
 
-    glm::mat4 depthBiasMVP = biasMatrix * depthMVP;
+
+    // projection
+
+    vec3 shootDir = glm::rotate(vec3(0,0,1), player->_verticalAngle, vec3(1,0,0));
+    shootDir = glm::normalize(glm::rotate(shootDir, player->_horizontalAngle, vec3(0,1,0)));
+
+    mat4 projectorP = glm::perspective(3.0f, 1.f, 0.1f, 200.f);
+    //mat4 projectorP = glm::ortho<float>(-1.5,1.5,-1.5,1.5, .1f, 200);
+    mat4 projectorV = glm::lookAt(player->position() + shootDir, player->position() + 2.f * shootDir, vec3(0,1,0));
+
+    mat4 mModel = inst.transform;
+    mat4 texMVP = projectorP * projectorV * mModel;
+
+    mat4 texGenMatrix = biasMatrix * texMVP;
 
     // bind VAO
     glBindVertexArray(asset->vao);
@@ -708,17 +726,7 @@ void DrawInstance(const ModelInstance& inst)
     glUniformMatrix4fv(program->uniform("model"), 1, GL_FALSE, glm::value_ptr(inst.transform));
 
     glUniformMatrix4fv(program->uniform("depthBias"), 1, GL_FALSE, &depthBiasMVP[0][0]);
-    /*   glUniformMatrix4fv(program->uniform("view"), 1, GL_FALSE, glm::value_ptr(camera->viewMatrix()));
-    glUniform3fv(program->uniform("lightInvDir"), 1, glm::value_ptr(lightInvDir));*/
-
-    // bind the texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, material->texture->object());
-    glUniform1i(program->uniform("tex"), 0);
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, depthTexture);
-    glUniform1i(program->uniform("shadowMap"), 1);
+    glUniformMatrix4fv(program->uniform("texGenMatrix"), 1, GL_FALSE, &texGenMatrix[0][0]);
 
     glUniform3fv(program->uniform("light.position"), 1, glm::value_ptr(gLight.position));
     glUniform3fv(program->uniform("light.intensities"), 1, glm::value_ptr(gLight.intensities));
@@ -730,6 +738,19 @@ void DrawInstance(const ModelInstance& inst)
     glUniform3fv(program->uniform("material.color"), 1, glm::value_ptr(material->color)); 
     glUniform3fv(program->uniform("material.specularColor"), 1, glm::value_ptr(material->specularColor));
     glUniform1f(program->uniform("material.shininess"), material->shininess);
+
+    // bind the textures
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, material->texture->object());
+    glUniform1i(program->uniform("tex"), 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, depthTexture);
+    glUniform1i(program->uniform("shadowMap"), 1);
+
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, targetTexture->object());
+    glUniform1i(program->uniform("targetTex"), 2);
 
     glDrawElements(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0);
 
@@ -827,8 +848,7 @@ GLFWwindow* openWindow(int width, int height)
 
 static Texture2* LoadTexture()
 {
-    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile(Assets("Texture/noise.png"));
-    bmp.flipVertically();
+    tdogl::Bitmap bmp = tdogl::Bitmap::bitmapFromFile(Assets("Texture/target.png"));
     return new Texture2(bmp);
 }
 

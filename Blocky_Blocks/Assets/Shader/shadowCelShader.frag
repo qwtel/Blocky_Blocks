@@ -4,6 +4,7 @@ uniform mat4 model;
 uniform vec3 cameraPosition;
 
 uniform sampler2D tex;
+uniform sampler2D targetTex;
 uniform sampler2DShadow shadowMap;
 
 uniform struct Light {
@@ -44,10 +45,8 @@ vec2 poissonDisk[16] = vec2[](
 in vec3 fragVert;
 in vec3 fragNormal;
 in vec2 fragTexCoord;
-//in vec3 position_worldspace;
-//in vec3 normal_cameraspace;
-//in vec3 eyeDirection_cameraspace;
-//in vec3 lightDirection_cameraspace;
+in vec4 fragTargetTexCoord;
+
 in vec4 shadowCoord;
 
 out vec4 finalColor;
@@ -90,11 +89,24 @@ void main() {
 	}
 	*/
 
+
 	vec3 normal = normalize(transpose(inverse(mat3(model))) * fragNormal);
 	vec3 surfacePos = vec3(model * vec4(fragVert, 1));
 	vec4 surfaceColor = vec4((material.color / 255.0), 1) * texture(tex, fragTexCoord);
 	vec3 surfaceToLight = normalize(light.position - surfacePos);
 	vec3 surfaceToCamera = normalize(cameraPosition - surfacePos);
+
+	// target projection
+	if (fragTargetTexCoord.w > 0) {
+		vec2 ttc = vec2(fragTargetTexCoord.xy / fragTargetTexCoord.w);
+		vec4 targetColor = vec4(1,1,1,1); 
+		if (ttc.x >= 0 && ttc.y >= 0 && ttc.x <= 1 && ttc.y <= 1) {
+		    targetColor = texture(targetTex, ttc);
+		}
+
+	        surfaceColor *= targetColor;
+	}
+
 
 	float cosDir = dot(surfaceToLight, -light.direction);
 	float spotEffect = smoothstep(0.8,0.98, cosDir);

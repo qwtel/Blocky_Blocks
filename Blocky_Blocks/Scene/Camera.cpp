@@ -17,7 +17,7 @@ Camera::~Camera(void)
 }
 
 mat4 Camera::matrix() const {
-    mat4 projection = perspective(_fieldOfView, _viewportAspectRatio, _nearPlane, _farPlane);
+    mat4 projection = glm::perspective(_fieldOfView, _viewportAspectRatio, _nearPlane, _farPlane);
     vec3 center = _target->position() + vec3(0,2,0); // look a bit above the target
     mat4 view = glm::lookAt(position(), center, vec3(0,1,0));
     return projection * view;
