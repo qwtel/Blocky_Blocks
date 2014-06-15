@@ -243,7 +243,7 @@ void Player::collide(ModelInstance* other, vec3 pA, vec3 pB) {
             if (Enemy* e = dynamic_cast<Enemy*>(this)) {
                 markDeleted();
             } else {
-                //gameOver();
+                setHit(true);
             }
         }
     } else if (World* w = dynamic_cast<World*>(other)) {

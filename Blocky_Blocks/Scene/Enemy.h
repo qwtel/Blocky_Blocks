@@ -21,6 +21,7 @@ public:
     virtual ~Enemy(void);
 
     virtual void update(float t, float deltaT);
+    virtual void stopShooting();
 
 private:
     typedef Player super;
@@ -36,5 +37,7 @@ private:
     float _jitter(float angle);
 
     btCollisionWorld* _collisionWorld;
+
+    bool shooting;
 };
 

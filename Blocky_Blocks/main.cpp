@@ -65,6 +65,7 @@ World* world;
 int currentEnemies = 0;
 int killCounter = 0;
 bool won = false;
+bool lost = false;
 double timeStamp = 0;
 
 GLuint positionBuffer;
@@ -254,6 +255,9 @@ int main()
             }
 
         }
+        else if(lost){
+
+        }
         //spawn enemies
         else{
 
@@ -327,27 +331,27 @@ void Update(double time, double deltaT)
             }
         }
     }
+    if(!lost){
+        if(glfwGetKey(window, 'S')){
+            player->moveBackward(timef, deltaTf);
+        } else if(glfwGetKey(window, 'W')){
+            player->moveForward(timef, deltaTf);
+        }
 
-    if(glfwGetKey(window, 'S')){
-        player->moveBackward(timef, deltaTf);
-    } else if(glfwGetKey(window, 'W')){
-        player->moveForward(timef, deltaTf);
+        if(glfwGetKey(window, 'A')){
+            player->moveLeft(timef, deltaTf);
+        } else if(glfwGetKey(window, 'D')){
+            player->moveRight(timef, deltaTf);
+        }
+
+        if(glfwGetKey(window, GLFW_KEY_SPACE)) {
+            player->jump(timef, deltaTf);
+        }
+
+        if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
+            player->shoot(timef, deltaTf);
+        }
     }
-
-    if(glfwGetKey(window, 'A')){
-        player->moveLeft(timef, deltaTf);
-    } else if(glfwGetKey(window, 'D')){
-        player->moveRight(timef, deltaTf);
-    }
-
-    if(glfwGetKey(window, GLFW_KEY_SPACE)) {
-        player->jump(timef, deltaTf);
-    }
-
-    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
-        player->shoot(timef, deltaTf);
-    }
-
     std::list<ModelInstance*>::const_iterator it;
     for(it = gInstances.begin(); it != gInstances.end();) {
         ModelInstance* instance = *it;
@@ -360,6 +364,25 @@ void Update(double time, double deltaT)
                 instance->markDeleted();
             }
         }
+        if(instance->getHit() && lost == false){
+
+            lost = true;
+            timeStamp = time;
+            //death animation
+            for (int i = 0; i < 250; i++) {
+                Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 33);
+                particles.push_back(part);
+
+            }
+        }
+        if(lost && timeStamp != 0 || won && timeStamp != 0){
+
+            if(typeid(*instance) == typeid(Enemy)){
+
+                dynamic_cast<Enemy*>(instance)->stopShooting();
+            }
+        }
+
 
         if (instance->isMarkedDeleted()) {
             printf("Deleted something %s\n", typeid(*instance).name());
@@ -405,18 +428,20 @@ void Update(double time, double deltaT)
         }
     }
 
-    //rotate camera based on mouse movement
-    const float mouseSensitivity = 0.1;
+    if(!lost){
+        //rotate camera based on mouse movement
+        const float mouseSensitivity = 0.1;
 
-    double mouseX, mouseY;
-    glfwGetCursorPos(window, &mouseX, &mouseY);
+        double mouseX, mouseY;
+        glfwGetCursorPos(window, &mouseX, &mouseY);
 
-    float diffX = mouseX - CENTER.x;
-    float diffY = mouseY - CENTER.y;
+        float diffX = mouseX - CENTER.x;
+        float diffY = mouseY - CENTER.y;
 
-    camera->offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
+        camera->offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
 
-    glfwSetCursorPos(window, CENTER.x, CENTER.y); //reset the mouse, so it doesn't go out of the window
+        glfwSetCursorPos(window, CENTER.x, CENTER.y); //reset the mouse, so it doesn't go out of the window
+    }
 }
 
 void Draw() 
@@ -433,6 +458,9 @@ void Draw()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
+        if((*it)->getHit()){
+            continue;
+        }
         DrawInstanceDepth(*(*it));
     }
 
@@ -490,6 +518,9 @@ void Draw()
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
+        if((*it)->getHit()){
+            continue;
+        }
         DrawInstance(*(*it));
     }
 
@@ -499,6 +530,9 @@ void Draw()
     glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
     for(it = gInstances.begin(); it != gInstances.end(); ++it){
+        if((*it)->getHit()){
+            continue;
+        }
         DrawContour(*(*it));
     }
 

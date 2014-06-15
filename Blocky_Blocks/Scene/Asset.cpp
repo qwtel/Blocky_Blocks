@@ -50,6 +50,7 @@ struct ModelInstance {
 	_collisionWorld(collisionWorld) 
     {
 	_deathMark = false;
+    hit = false;
     }
 
     virtual ~ModelInstance() {
@@ -62,13 +63,15 @@ struct ModelInstance {
 
     virtual void markDeleted() { _deathMark = true; };
     virtual bool isMarkedDeleted() { return _deathMark; };
-
+    virtual void setHit(bool h) { hit = h;};
+    virtual bool getHit() { return hit;};
 protected:
     std::list<ModelInstance*>* _instances;
     btCollisionWorld* _collisionWorld;
 
 private:
     bool _deathMark;
+    bool hit;
 };
 
 struct Light {

@@ -26,8 +26,7 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<Mo
         _position = vec3(rand() % 170 - 85, 20, rand() % 170 - 85);  
     }
 
-
-
+    shooting = true;
     //printf("%f, %f, %f\n", _position.x, _position.y, _position.z);
     //color = vec3(255,153,153);
 }
@@ -60,7 +59,7 @@ void Enemy::update(float time, float deltaT)
         _waitTime = (rand() % Moviness + 1) / 1000.0f;
 
         bool shouldShoot = rand() % Shootiness == 0;
-        if (shouldShoot) {
+        if (shouldShoot && shooting) {
             shoot(time, deltaT);
         }
 
@@ -84,4 +83,9 @@ float Enemy::_jitter(float angle)
 {
     float asdf = rand() % (Aiminess * 2) - Aiminess;
     return angle + asdf;
+}
+
+void Enemy::stopShooting(){
+
+    shooting = false;   
 }
