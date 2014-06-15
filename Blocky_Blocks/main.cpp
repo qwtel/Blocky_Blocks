@@ -270,7 +270,7 @@ void Update(double time, double deltaT)
 
             if (dynamic_cast<Bullet*>(instance)) {
                 for (int i = 0; i < 50; i++) {
-                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 10);
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 15);
                     particles.push_back(part);
                 }
             } else if (dynamic_cast<Player*>(instance)) {

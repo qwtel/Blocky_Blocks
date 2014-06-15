@@ -66,15 +66,17 @@ void Enemy::update(float time, float deltaT)
 
         vec3 direction = normalize(_position - _enemy->position());
         float zAngle = glm::angle(vec3(0,0,1), direction);
-        float angle = _jitter(zAngle);
+        zAngle = _jitter(zAngle);
+
+        float yAngle = glm::angle(vec3(0,-1,0), direction);
+
+	//printf("%f <-> %f\n", _verticalAngle, yAngle - 90);
 
         if (direction.x > 0) {
-            setLookAngle(_verticalAngle, 180 + angle);
+            setLookAngle(yAngle - 90, 180 + zAngle);
         } else {
-            setLookAngle(_verticalAngle, 180 - angle);
+            setLookAngle(yAngle - 90, 180 - zAngle);
         }
-
-        // TODO: Aim vertically
     }
 
     super::update(time, deltaT);
