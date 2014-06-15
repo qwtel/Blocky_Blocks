@@ -79,6 +79,7 @@ void Player::update(float time, float deltaT)
     _time = time;
     _deltaT = deltaT;
 
+
     if (_isJumping) {
         float x = (time - _jumpStart) / JumpDuration;
 
@@ -242,7 +243,7 @@ void Player::collide(ModelInstance* other, vec3 pA, vec3 pB) {
             if (Enemy* e = dynamic_cast<Enemy*>(this)) {
                 markDeleted();
             } else {
-                //gameOver();
+                setHit(true);
             }
         }
     } else if (World* w = dynamic_cast<World*>(other)) {

@@ -100,6 +100,7 @@
     <ClCompile Include="Scene\World.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cfgReader.h" />
     <ClInclude Include="Scene\Mesh.h" />
     <ClInclude Include="Scene\Enemy.h" />
     <ClInclude Include="Scene\Bullet.h" />
@@ -120,11 +121,15 @@
     <None Include="Assets\Models\world.model" />
     <None Include="Assets\Shader\cameraVertexShader.vert" />
     <None Include="Assets\Shader\celShader.frag" />
+    <None Include="Assets\Shader\depthShader.frag" />
+    <None Include="Assets\Shader\depthShader.vert" />
     <None Include="Assets\Shader\instancingCelShader.frag" />
     <None Include="Assets\Shader\instancingShader.vert" />
     <None Include="Assets\Shader\instancingShader2.vert" />
     <None Include="Assets\Shader\lightingFragmentShader.frag" />
     <None Include="Assets\Shader\lightingVertexShader.vert" />
+    <None Include="Assets\Shader\shadowCelShader.frag" />
+    <None Include="Assets\Shader\shadowVertexShader.vert" />
     <None Include="Assets\Shader\textureFragmentShader.frag" />
     <None Include="Assets\Shader\textureVertexShader.vert" />
     <None Include="Assets\Shader\vertexshader.vert" />
