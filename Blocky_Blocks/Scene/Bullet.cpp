@@ -108,7 +108,7 @@ void Bullet::collide(ModelInstance* other, vec3 pA, vec3 pB)
     } else if (World* w = dynamic_cast<World*>(other)) {
         markDeleted();
     } else {
-        fprintf(stderr, "Collision with unkown type");
+        printf("Collision with unkown type\n");
         markDeleted();
     }
 }
