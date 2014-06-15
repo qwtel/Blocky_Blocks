@@ -33,6 +33,7 @@ using namespace glm;
 #include "Scene/Bullet.h"
 #include "Scene/Enemy.h"
 #include "Scene/World.h"
+#include "Scene/Cow.h"
 
 #include "Scene/Mesh.h"
 
@@ -64,10 +65,13 @@ Camera* camera;
 
 ModelAsset gWoodenCrate;
 ModelAsset gWorld;
+ModelAsset gCow;
 std::list<ModelInstance*> gInstances;
 Light gLight;
 Player* player;
 World* world;
+Cow* cow;
+
 int currentEnemies = 0;
 int killCounter = 0;
 bool won = false;
@@ -118,6 +122,8 @@ static Texture2* LoadTexture();
 static void ImportScene(const std::string& pFile);
 static void LoadWorldAsset();
 static void CreateWorldInstance();
+static void LoadCowAsset();
+static void CreateCowInstance();
 static Material* GiveMaterial(vec3 color, string texPath);
 static btTriangleMesh* giveTriangleMesh(const struct aiMesh *pAIMesh);
 
@@ -169,6 +175,12 @@ int main()
     LoadWorldAsset();
     CreateWorldInstance();
 
+
+    //initialise cow
+    ImportScene(Assets("Models/cow.obj"));
+    LoadCowAsset();
+    CreateCowInstance();
+
     player = new Player(&gWoodenCrate, GiveMaterial(vec3(132,213,219),"Texture/noise.png"), &gInstances, collisionWorld);
 
     camera = new Camera(player);
@@ -178,14 +190,15 @@ int main()
     //camera->setPosition(vec3(0,0,4));
     camera->setViewportAspectRatio(SCREEN_SIZE.x / SCREEN_SIZE.y);
 
-    gLight.position = vec3(0,30,0);
+    gLight.position = vec3(0,0,0);
     //gLight.position.y = gLight.position.y + 15.0f;
     gLight.intensities = vec3(1, 1, 1) * 0.9f;
     gLight.attenuation = 0.0005f;
     gLight.ambientCoefficient = BlockyDoomMode ? 0.f : 0.50f;
+
     //gLight.direction=normalize(player->position()-camera->position());
     gLight.direction = vec3(0,-1,0);
-    gLight.range = 200;
+    gLight.range = 100;
 
     glEnable(GL_CULL_FACE);
 
@@ -250,14 +263,14 @@ int main()
     {
         //printf("%i\n", particles.size());
         //move light
-        //gLight.position.z = gLight.position.z + 5;
+        gLight.position.z = gLight.position.z + 5;
         gLight.direction = normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));
         gLight.position = player->position() + gLight.direction * 2.f;
         gLight.position.y += 3.f;
 
         //fireworks
         if(won){
-            if(time - timeStamp >= 0.1){
+            if(time - timeStamp >= 0.3){
 
                 Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
                 timeStamp = time;
@@ -267,8 +280,9 @@ int main()
         else if(lost){
 
             if(time-timeStamp >= 0.5){
-                gLight.intensities = vec3(1,0,0);
-                gLight.position = vec3(0,100,0);
+                /* gLight.position = player->position();
+                gLight.position.y += 5;
+                gLight.direction = vec3(0,-1,0);*/
             }
         }
         //spawn enemies
@@ -915,8 +929,7 @@ static void ImportScene(const std::string& pFile) {
         aiProcess_GenSmoothNormals          |
         aiProcess_JoinIdenticalVertices     |
         aiProcess_ImproveCacheLocality      |
-        aiProcess_SortByPType               |
-        aiProcess_FlipUVs);
+        aiProcess_SortByPType);
 
     for(unsigned int i = 0; i < scene->mNumMeshes; i++)
     {
@@ -1200,4 +1213,93 @@ static void LoadWorldAsset()
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+static void LoadCowAsset()
+{
+    gCow.program = LoadShaders();
+    gCow.program2 = LoadShaders2();
+    gCow.drawType = GL_TRIANGLES;
+    gCow.drawStart = 0;
+    gCow.drawCount = meshes[2]->numIndices;
+
+    // create and bind VAO
+    glGenVertexArrays(1, &gCow.vao);
+    glBindVertexArray(gCow.vao);
+
+    glGenBuffers(1, &gCow.indexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gCow.indexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshes[2]->numIndices * sizeof(unsigned int), meshes[2]->indices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &gCow.positionBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gCow.positionBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[2]->numVertices* 3 * sizeof(float), meshes[2]->vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(gCow.program->attrib("vert"));
+    glVertexAttribPointer(gCow.program->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glGenBuffers(1, &gCow.normalBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gCow.normalBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[2]->numVertices* 3 * sizeof(float), meshes[2]->normals, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(gCow.program->attrib("vertNormal"));
+    glVertexAttribPointer(gCow.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+    glGenBuffers(1, &gCow.uvBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, gCow.uvBuffer);
+    glBufferData(GL_ARRAY_BUFFER, meshes[2]->numVertices* 3 * sizeof(float), meshes[2]->textureCoords, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(gCow.program->attrib("vertTexCoord"));
+    glVertexAttribPointer(gCow.program->attrib("vertTexCoord"), 2, GL_FLOAT, GL_FALSE,  3*sizeof(float), 0);
+
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // create and bind VAO
+    glGenVertexArrays(1, &gCow.vao2);
+    glBindVertexArray(gCow.vao2);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gCow.indexBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gCow.positionBuffer);
+    glEnableVertexAttribArray(gCow.program2->attrib("vert"));
+    glVertexAttribPointer(gCow.program2->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gCow.normalBuffer);
+    glEnableVertexAttribArray(gCow.program->attrib("vertNormal"));
+    glVertexAttribPointer(gCow.program->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // create and bind VAO for drawing instancing countours
+    gCow.shadowProgram = LoadDepthShaders();
+
+    glGenVertexArrays(1, &gCow.shadowVao);
+    glBindVertexArray(gCow.shadowVao);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gCow.indexBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, gCow.positionBuffer);
+    glEnableVertexAttribArray(gCow.shadowProgram->attrib("vert"));
+    glVertexAttribPointer(gCow.shadowProgram->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    /*
+    glBindBuffer(GL_ARRAY_BUFFER, gCow.normalBuffer);
+    glEnableVertexAttribArray(shadowProgramWorld->attrib("vertNormal"));
+    glVertexAttribPointer(shadowProgramWorld->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
+    */
+
+    // unbind the VAO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+static void CreateCowInstance()
+{
+    Material* m = GiveMaterial(vec3(255,255,255),"Texture/cow.jpg");
+    btTriangleMesh* triMesh = giveTriangleMesh(meshes[2]->mesh);
+    cow = new Cow(&gCow, m, triMesh, &gInstances, collisionWorld);
 }

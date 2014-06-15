@@ -73,12 +73,35 @@ void main() {
 
 	float bias = 0.0005;
 
-	float visibility = 1;
+	float visibility = 1.29;
 	
 	if (shadowCoord.w > 0) {
-		visibility = texture(shadowMap, vec3(shadowCoord.xy / shadowCoord.w, (shadowCoord.z - bias) / shadowCoord.w));
-		visibility += 0.75;
-		visibility = min(visibility, 1);
+
+		vec2 offset = shadowCoord.xy;
+		offset.x -= 0.04;
+		offset.y -= 0.04;
+
+		visibility = texture(shadowMap, vec3((offset / shadowCoord.w)+bias, (shadowCoord.z - bias) / shadowCoord.w));
+
+		
+		for(int i=0;i<7;i++){
+		
+			offset.x += 0.01;
+
+			for(int i=0;i<7;i++){
+				
+				offset.y += 0.01;
+				visibility += texture(shadowMap, vec3((offset / shadowCoord.w)+bias, (shadowCoord.z - bias) / shadowCoord.w));
+			}
+			
+			//visibility += texture(shadowMap, vec3((offset / shadowCoord.w)+bias, (shadowCoord.z - bias) / shadowCoord.w));
+			//visibility += 0.75;
+			//visibility = min(visibility, 1);
+
+		}
+		
+		visibility /= 64;
+		visibility += 0.5;
 	}
 
 	/*

@@ -84,6 +84,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Scene\Cow.cpp" />
     <ClCompile Include="Scene\Mesh.cpp" />
     <ClCompile Include="Scene\Enemy.cpp" />
     <ClCompile Include="Scene\Bullet.cpp" />
@@ -101,6 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cfgReader.h" />
+    <ClInclude Include="Scene\Cow.h" />
     <ClInclude Include="Scene\Mesh.h" />
     <ClInclude Include="Scene\Enemy.h" />
     <ClInclude Include="Scene\Bullet.h" />

@@ -109,6 +109,7 @@ void Bullet::collide(ModelInstance* other, vec3 pA, vec3 pB)
         markDeleted();
     } else {
         fprintf(stderr, "Collision with unkown type");
+        markDeleted();
     }
 }
 
