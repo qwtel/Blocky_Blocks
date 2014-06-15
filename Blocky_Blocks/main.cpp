@@ -177,7 +177,7 @@ int main()
 
 
     //initialise cow
-    ImportScene(Assets("Models/cow.obj"));
+    ImportScene(Assets("Models/cow.model"));
     LoadCowAsset();
     CreateCowInstance();
 
