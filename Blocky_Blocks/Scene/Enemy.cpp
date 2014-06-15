@@ -20,7 +20,7 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<Mo
 {
     if(time < 3){
 
-        _position = vec3(rand() % 50 - 25, 20, rand() % 50 - 25); 
+        _position = vec3(rand() % 80, 20, rand() % 170 - 85); 
     }
     else{
         _position = vec3(rand() % 170 - 85, 20, rand() % 170 - 85);  

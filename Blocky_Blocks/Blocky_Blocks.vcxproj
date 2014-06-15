@@ -100,6 +100,7 @@
     <ClCompile Include="Scene\World.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cfgReader.h" />
     <ClInclude Include="Scene\Mesh.h" />
     <ClInclude Include="Scene\Enemy.h" />
     <ClInclude Include="Scene\Bullet.h" />

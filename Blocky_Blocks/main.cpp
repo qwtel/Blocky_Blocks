@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <list>
+#include <map>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -38,13 +39,19 @@ using namespace glm;
 #include "Scene/Asset.cpp"
 #include "Scene/Particle.cpp"
 
-const vec2 SCREEN_SIZE(800, 600);
+#include "cfgReader.h"
+
+map<string,string> cfg = initCfg();
+
+const vec2 SCREEN_SIZE(atoi(cfg.find("screenWidth")->second.c_str()), atoi(cfg.find("screenHeight")->second.c_str()));
 const vec2 CENTER = SCREEN_SIZE * 0.5f;
 
-static const int SHADOWMAP_SIZE = 2048;
+static const int SHADOWMAP_SIZE = atoi(cfg.find("shadowMapSize")->second.c_str());
 
-static const int TimeToLive = 50;
-static const int NumEnemies = 0;
+static const int TimeToLive = atoi(cfg.find("particleTTL")->second.c_str());
+static const int NumEnemies = atoi(cfg.find("numEnemies")->second.c_str());
+
+static const int killsToWin = atoi(cfg.find("killsToWin")->second.c_str());
 
 GLFWwindow* window;
 Camera* camera;
@@ -56,6 +63,9 @@ Light gLight;
 Player* player;
 World* world;
 int currentEnemies = 0;
+int killCounter = 0;
+bool won = false;
+double timeStamp = 0;
 
 GLuint positionBuffer;
 GLuint normalBuffer;
@@ -118,6 +128,7 @@ Program* fuckProgram;
 
 int main() 
 {
+
     // (1) init everything you need
     window = openWindow(SCREEN_SIZE.x, SCREEN_SIZE.y);
 
@@ -234,10 +245,22 @@ int main()
         gLight.position = player->position() + gLight.direction * 2.f;
         gLight.position.y += 3.f;
 
+        //fireworks
+        if(won){
+            if(time - timeStamp >= 0.1){
+
+                Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
+                timeStamp = time;
+            }
+
+        }
         //spawn enemies
-        for (int i = 0; i < NumEnemies - currentEnemies; i++) {
-            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
-            currentEnemies++;
+        else{
+
+            for (int i = 0; i < NumEnemies - currentEnemies; i++) {
+                Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
+                currentEnemies++;
+            }
         }
 
         // (3) compute the frame time delta
@@ -330,11 +353,19 @@ void Update(double time, double deltaT)
         ModelInstance* instance = *it;
         instance->update(timef, deltaTf);
 
+        //check if win condition is meet
+        if(killCounter >= killsToWin){
+            if(typeid(*instance) == typeid(Enemy)){
+
+                instance->markDeleted();
+            }
+        }
 
         if (instance->isMarkedDeleted()) {
             printf("Deleted something %s\n", typeid(*instance).name());
             if(typeid(*instance) == typeid(Enemy)){
                 currentEnemies--;
+                killCounter++;       
             }
 
             if (dynamic_cast<Bullet*>(instance)) {
@@ -355,7 +386,10 @@ void Update(double time, double deltaT)
             ++it;
         }
     }
-
+    if(won == false & killCounter >= killsToWin){
+        won = true;
+        timeStamp = time;
+    }
     // update "particles"
     std::list<Particle*>::const_iterator it2;
     for (it2 = particles.begin(); it2 != particles.end();) {

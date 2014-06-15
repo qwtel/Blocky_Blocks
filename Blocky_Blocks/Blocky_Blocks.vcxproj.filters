@@ -92,6 +92,9 @@
     <ClInclude Include="Scene\World.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="cfgReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Shader\cameraVertexShader.vert" />
