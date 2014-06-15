@@ -50,8 +50,10 @@ static const int SHADOWMAP_SIZE = atoi(cfg.find("shadowMapSize")->second.c_str()
 
 static const int TimeToLive = atoi(cfg.find("particleTTL")->second.c_str());
 static const int NumEnemies = atoi(cfg.find("numEnemies")->second.c_str());
-
-static const int killsToWin = atoi(cfg.find("killsToWin")->second.c_str());
+static const int KillsToWin = atoi(cfg.find("killsToWin")->second.c_str());
+static const bool ShowShadowMap = atoi(cfg.find("showShadowMap")->second.c_str()) == 0 ? false : true;
+static const bool DrawContours = atoi(cfg.find("drawContours")->second.c_str()) == 0 ? false : true;
+static const bool BlockyDoomMode = atoi(cfg.find("blockyDoomMode")->second.c_str()) == 0 ? false : true;
 
 GLFWwindow* window;
 Camera* camera;
@@ -93,9 +95,9 @@ GLFWwindow* openWindow(int width, int height);
 void Update(double time, double deltaT);
 void Draw();
 void DrawInstance(const ModelInstance& inst);
-void DrawContour(const ModelInstance& inst);
+void drawContour(const ModelInstance& inst);
 void DrawParticles(mat4* data, vec3* colors, int size);
-void DrawParticlesContour(mat4* data, vec3* colors, int size);
+void drawParticlesContour(mat4* data, vec3* colors, int size);
 void DrawInstanceDepth(const ModelInstance& inst);
 
 void cleanup();
@@ -173,10 +175,10 @@ int main()
     //gLight.position.y = gLight.position.y + 15.0f;
     gLight.intensities = vec3(1, 1, 1) * 0.9f;
     gLight.attenuation = 0.0005f;
-    gLight.ambientCoefficient = 0.50f;
+    gLight.ambientCoefficient = BlockyDoomMode ? 0.f : 0.50f;
     //gLight.direction=normalize(player->position()-camera->position());
     gLight.direction = vec3(0,-1,0);
-    gLight.range = 200;
+    gLight.range = 100;
 
     glEnable(GL_CULL_FACE);
 
@@ -362,7 +364,7 @@ void Update(double time, double deltaT)
         instance->update(timef, deltaTf);
 
         //check if win condition is meet
-        if(killCounter >= killsToWin){
+        if(killCounter >= KillsToWin){
             if(typeid(*instance) == typeid(Enemy)){
 
                 instance->markDeleted();
@@ -413,7 +415,7 @@ void Update(double time, double deltaT)
             ++it;
         }
     }
-    if(won == false & killCounter >= killsToWin){
+    if(won == false & killCounter >= KillsToWin){
         won = true;
         timeStamp = time;
     }
@@ -476,38 +478,36 @@ void Draw()
 
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    // FUCK
-    // FUCK
-    // FUCK
-    // FUCK
-    glBindVertexArray(fuckvao);
+    if (ShowShadowMap) {
+        glBindVertexArray(fuckvao);
 
-    // Use our shader
-    glUseProgram(fuckProgram->object());
+        // Use our shader
+        glUseProgram(fuckProgram->object());
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 
-    // Bind our texture in Texture Unit 0
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, depthTexture);
-    // Set our "renderedTexture" sampler to user Texture Unit 0
-    glUniform1i(fuckProgram->uniform("texture"), 3);
+        // Bind our texture in Texture Unit 0
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, depthTexture);
+        // Set our "renderedTexture" sampler to user Texture Unit 0
+        glUniform1i(fuckProgram->uniform("texture"), 3);
 
-    // 1rst attribute buffer : vertices
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(
-        0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-        3,                  // size
-        GL_FLOAT,           // type
-        GL_FALSE,           // normalized?
-        0,                  // stride
-        (void*)0            // array buffer offset
-        );
+        // 1rst attribute buffer : vertices
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(
+            0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
+            3,                  // size
+            GL_FLOAT,           // type
+            GL_FALSE,           // normalized?
+            0,                  // stride
+            (void*)0            // array buffer offset
+            );
 
-    // Draw the triangle !
-    glDrawArrays(GL_TRIANGLES, 0, 6); // 3 indices starting at 0 -> 1 triangle
+        // Draw the triangle !
+        glDrawArrays(GL_TRIANGLES, 0, 6); // 3 indices starting at 0 -> 1 triangle
 
-    glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(0);
+    }
 
     glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
 
@@ -528,16 +528,18 @@ void Draw()
         DrawInstance(*(*it));
     }
 
-    // contour shader
-    glUseProgram(player->asset->program2->object());
-    glCullFace(GL_FRONT);
-    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    if (DrawContours) {
+        // contour shader
+        glUseProgram(player->asset->program2->object());
+        glCullFace(GL_FRONT);
+        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
-    for(it = gInstances.begin(); it != gInstances.end(); ++it){
-        if((*it)->getHit()){
-            continue;
+        for(it = gInstances.begin(); it != gInstances.end(); ++it){
+            if((*it)->getHit()){
+                continue;
+            }
+            drawContour(*(*it));
         }
-        DrawContour(*(*it));
     }
 
     // "particle" shader
@@ -563,12 +565,14 @@ void Draw()
 
         DrawParticles(data, colors, size);
 
-        // contour shader
-        glUseProgram(instancingProgram2->object());
-        glCullFace(GL_FRONT);
-        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        if (DrawContours) {
+            // contour shader
+            glUseProgram(instancingProgram2->object());
+            glCullFace(GL_FRONT);
+            glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
-        DrawParticlesContour(data, colors, size);
+            drawParticlesContour(data, colors, size);
+        }
 
         delete data;
         delete colors;
@@ -652,7 +656,7 @@ void DrawParticles(mat4* data, vec3* colors, int size)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void DrawParticlesContour(mat4* data, vec3* colors, int size)
+void drawParticlesContour(mat4* data, vec3* colors, int size)
 {
     glBindBuffer(GL_ARRAY_BUFFER, instancingVbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(mat4) * size, &data[0], GL_DYNAMIC_DRAW);
@@ -735,7 +739,7 @@ void DrawInstance(const ModelInstance& inst)
     glBindTexture(GL_TEXTURE_2D, 1);
 }
 
-void DrawContour(const ModelInstance& inst) 
+void drawContour(const ModelInstance& inst) 
 {
     ModelAsset* asset = inst.asset;
     Program* program = asset->program2;

@@ -113,6 +113,7 @@
     <None Include="Assets\Shader\shadowCelShader.frag" />
     <None Include="Assets\Shader\lightingVertexShader.vert" />
     <None Include="Assets\Shader\shadowVertexShader.vert" />
+    <None Include="config.cfg" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Texture\block.png">

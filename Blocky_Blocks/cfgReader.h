@@ -25,7 +25,10 @@ map<string, string> initCfg(){
     {
         while ( getline (myfile,line) )
         {
-            string s = line;
+            if (line[0] == '#') {
+		continue;
+            }
+
             posEqual = line.find('=');
             name = trim(line.substr(0,posEqual));
             value = trim(line.substr(posEqual+1));

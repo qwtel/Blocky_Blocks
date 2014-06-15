@@ -133,6 +133,7 @@
     <None Include="Assets\Shader\textureFragmentShader.frag" />
     <None Include="Assets\Shader\textureVertexShader.vert" />
     <None Include="Assets\Shader\vertexshader.vert" />
+    <None Include="config.cfg" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Texture\block.png" />
