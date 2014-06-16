@@ -388,7 +388,7 @@ void moveSpotLight(float time, float deltaT) {
 void respawnEnemies(float time, float deltaT) {
     //fireworks
     if(won){
-        if(time - timeStamp >= 0.3){
+        if(time - timeStamp >= 0.4){
 
             Enemy* enemy = new Enemy(&gWoodenCrate, time, player, loadMaterial(vec3(255,153,153),"Texture/noise.png"), &instances, collisionWorld, player->position());
             timeStamp = time;
@@ -611,9 +611,9 @@ void draw()
     glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
 
     // clear the frame and depth buffer
-    //vec3 bg = vec3(225,209,244) / 255.0f;
-    //glClearColor(bg.r, bg.g, bg.b, 1);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    vec3 bg = vec3(225,209,244) / 255.0f;
+    glClearColor(bg.r, bg.g, bg.b, 1);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // cel shader
     glUseProgram(player->asset->program->object());
