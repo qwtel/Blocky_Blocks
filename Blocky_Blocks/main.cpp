@@ -57,12 +57,12 @@ static const int KillsToWin = atoi(cfg.find("killsToWin")->second.c_str());
 
 static const bool ShowShadowMap = atoi(cfg.find("showShadowMap")->second.c_str()) == 0 ? false : true;
 
+static const int UseCelShade = atoi(cfg.find("useCelShade")->second.c_str());
 static const bool DrawContours = atoi(cfg.find("drawContours")->second.c_str()) == 0 ? false : true;
 
 static const bool CelShading = atoi(cfg.find("celShading")->second.c_str()) == 0 ? false : true;
 
 static const bool BlockyDoomMode = atoi(cfg.find("blockyDoomMode")->second.c_str()) == 0 ? false : true;
-
 static const bool GodMode = atoi(cfg.find("godMode")->second.c_str()) == 0 ? false : true;
 
 GLFWwindow* window;
@@ -119,7 +119,7 @@ void cleanup();
 
 static void LoadWoodenCrateAsset();
 static Program* LoadShaders();
-static Program* LoadShaders2();
+static Program* LoadShadersContour();
 static Program* LoadDepthShaders();
 static Program* LoadDebugShadowShaders();
 
@@ -739,6 +739,8 @@ void drawInstance(const ModelInstance& inst)
     // bind VAO
     glBindVertexArray(asset->vao);
 
+    glUniform1i(program->uniform("UseCelShade" ), UseCelShade);
+
     // set the shader uniforms
     glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera->matrix()));
     glUniform3fv(program->uniform("cameraPosition"), 1, glm::value_ptr(camera->position()));
@@ -893,7 +895,7 @@ static Program* LoadShaders()
 
 }
 
-static Program* LoadShaders2() 
+static Program* LoadShadersContour() 
 {
     Shader* vertexShader = new Shader(Assets("Shader/vertexshader.vert").c_str(), GL_VERTEX_SHADER);
     Shader* fragmentShader = new Shader(Assets("Shader/fragmentshader.frag").c_str(), GL_FRAGMENT_SHADER);
@@ -1047,7 +1049,7 @@ static void LoadWoodenCrateAsset()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // create and bind VAO for drawing contours
-    gWoodenCrate.program2 = LoadShaders2();
+    gWoodenCrate.program2 = LoadShadersContour();
 
     glGenVertexArrays(1, &gWoodenCrate.vao2);
     glBindVertexArray(gWoodenCrate.vao2);
@@ -1163,7 +1165,7 @@ static void LoadWoodenCrateAsset()
 static void LoadWorldAsset()
 {
     gWorld.program = LoadShaders();
-    gWorld.program2 = LoadShaders2();
+    gWorld.program2 = LoadShadersContour();
     gWorld.drawType = GL_TRIANGLES;
     gWorld.drawStart = 0;
     gWorld.drawCount = meshes[1]->numIndices;
@@ -1245,7 +1247,7 @@ static void LoadWorldAsset()
 static void LoadCowAsset()
 {
     gCow.program = LoadShaders();
-    gCow.program2 = LoadShaders2();
+    gCow.program2 = LoadShadersContour();
     gCow.drawType = GL_TRIANGLES;
     gCow.drawStart = 0;
     gCow.drawCount = meshes[2]->numIndices;

@@ -7,6 +7,8 @@ uniform sampler2D tex;
 uniform sampler2D targetTex;
 uniform sampler2DShadow shadowMap;
 
+uniform int UseCelShade;
+
 uniform struct Light {
     vec3 position;
     vec3 intensities;
@@ -31,7 +33,9 @@ in vec4 shadowCoord;
 
 out vec4 finalColor;
 
-const float A = 0.1;
+const float bias = 0.0005;
+
+const float A = 0.08;
 const float B = 0.15;
 const float C = 0.3;
 const float D = 0.45;
@@ -40,7 +44,17 @@ const float F = 0.75;
 const float G = 0.9;
 const float H = 1.0;
 
-const float bias = 0.0005;
+float celShade(float shade) {
+    if (shade < A) shade = 0.0;
+    else if (shade < B) shade = B;
+    else if (shade < C) shade = C;
+    else if (shade < D) shade = D;
+    else if (shade < E) shade = E;
+    else if (shade < F) shade = F;
+    else if (shade < G) shade = G;
+    else shade = H;
+    return shade;
+}
 
 void main() {
     
@@ -88,6 +102,9 @@ void main() {
 
     float cosDir = dot(surfaceToLight, -light.direction);
     float spotEffect = smoothstep(0.8,0.98, cosDir);
+
+    if (UseCelShade == 1)
+        spotEffect = celShade(spotEffect);
  
     float heightAttenuation = smoothstep(light.range, 0.0, length(surfaceToLight));
 
@@ -97,15 +114,8 @@ void main() {
     //diffuse
     float diffuseCoefficient = max(0.0, dot(normal, surfaceToLight));
 
-    // cel shade diffuse
-    if (diffuseCoefficient < A) diffuseCoefficient = 0.0;
-    else if (diffuseCoefficient < B) diffuseCoefficient = B;
-    else if (diffuseCoefficient < C) diffuseCoefficient = C;
-    else if (diffuseCoefficient < D) diffuseCoefficient = D;
-    else if (diffuseCoefficient < E) diffuseCoefficient = E;
-    else if (diffuseCoefficient < F) diffuseCoefficient = F;
-    else if (diffuseCoefficient < G) diffuseCoefficient = G;
-    else diffuseCoefficient = H;
+    if (UseCelShade == 1)
+        diffuseCoefficient = celShade(diffuseCoefficient);
 
     vec3 diffuse = diffuseCoefficient * (surfaceColor.rgb * light.intensities);
 
@@ -115,14 +125,12 @@ void main() {
         specularCoefficient = pow(max(0.0, dot(surfaceToCamera, reflect(-surfaceToLight, normal))), material.shininess);
     }
 
-    // cel shade specular
-    if (specularCoefficient < A) specularCoefficient = 0.0;
-    else if (specularCoefficient < B) specularCoefficient = B;
-    else if (specularCoefficient < C) specularCoefficient = C;
-    else specularCoefficient = D;
+    if (UseCelShade == 1)
+        specularCoefficient = celShade(specularCoefficient);
 
-    specularCoefficient *= 0.5;
     vec3 specular = specularCoefficient * material.specularColor * light.intensities;
+
+    specular *= 0.5;
 
     //attenuation
     float distanceToLight = length(light.position - surfacePos);
