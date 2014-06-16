@@ -201,7 +201,7 @@ int main()
     btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
 
     // SimpleBroadphase is a brute force alternative, performing N^2 aabb overlap tests
-    btDbvtBroadphase*	broadphase = new btDbvtBroadphase();
+    btBroadphaseInterface* broadphase = new btSimpleBroadphase();
 
     collisionWorld = new btCollisionWorld(dispatcher, broadphase, collisionConfiguration);
 
