@@ -29,7 +29,7 @@ Bullet::Bullet(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instanc
     _rotateAngle(),
     _owner(owner)
 {
-    float scale = 0.33;
+    float scale = 0.33f;
 
     _rotateAngle = rand() % 360 + 1;
     // printf("%f\n", _rotateAngle);

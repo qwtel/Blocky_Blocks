@@ -16,7 +16,7 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<Mo
     Player(ma, mat, instances, collisionWorld),
     _enemy(of),
     _lastMove(time),
-    _waitTime(rand() % 2)
+    _waitTime(float(rand() % 2))
 {
     int posx = 0;
     int posz = 0;
