@@ -33,7 +33,7 @@ struct Particle {
 	int z = rand() % 100 - 50;
 
 	_direction = vec3(x, y, z) / 50.f;
-	_velocity = rand() % 25 + 25;
+	_velocity = float(rand() % 25 + 25);
     }
 
     void update(float time, float deltaT) {

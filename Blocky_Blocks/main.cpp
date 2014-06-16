@@ -174,7 +174,7 @@ Program* debugShadowProgram;
 int main() 
 {
     // (1) init everything you need
-    window = openWindow(SCREEN_SIZE.x, SCREEN_SIZE.y);
+    window = openWindow(int(SCREEN_SIZE.x), int(SCREEN_SIZE.y));
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -211,9 +211,11 @@ int main()
     createWorldInstance();
 
     //initialise teapot
+    /*
     importScene(Assets("Models/teapot.obj"));
     loadTeapotAsset();
     createTeapotInstance();
+    */
 
     player = new Player(&gWoodenCrate, loadMaterial(vec3(132,213,219),"Texture/noise.png"), &instances, collisionWorld);
 
@@ -445,7 +447,7 @@ void checkUserInput(float time, float deltaT)
 }
 
 void checkGameOver(float time, float deltaT) {
-    if(won == false & killCounter >= KillsToWin){
+    if(won == false && killCounter >= KillsToWin){
         won = true;
         cout << "YOU WON!!! TIME: ";
         cout << time << endl;
@@ -536,13 +538,13 @@ void updateParticles(float time, float deltaT) {
 void rotateCamera(float time, float deltaT)
 {
     //rotate camera based on mouse movement
-    const float mouseSensitivity = 0.1;
+    const float mouseSensitivity = 0.1f;
 
     double mouseX, mouseY;
     glfwGetCursorPos(window, &mouseX, &mouseY);
 
-    float diffX = mouseX - CENTER.x;
-    float diffY = mouseY - CENTER.y;
+    float diffX = float(mouseX) - CENTER.x;
+    float diffY = float(mouseY) - CENTER.y;
 
     camera->offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
 
@@ -611,7 +613,7 @@ void draw()
         glDisableVertexAttribArray(0);
     }
 
-    glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
+    glViewport(0,0,(GLsizei)SCREEN_SIZE.x,(GLsizei)SCREEN_SIZE.y);
 
     // cel shader
     glUseProgram(player->asset->program->object());
@@ -1044,7 +1046,7 @@ static btTriangleMesh* pAIMesh2btTriangleMesh(const struct aiMesh *pAIMesh)
     btTriangleMesh* triMesh = new btTriangleMesh();
 
     aiFace *pAIFace;
-    for ( int y = 0; y < pAIMesh->mNumFaces; y++ )
+    for ( unsigned int y = 0; y < pAIMesh->mNumFaces; y++ )
     {
         pAIFace = &pAIMesh->mFaces[y];
 

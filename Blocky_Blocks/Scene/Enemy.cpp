@@ -141,7 +141,7 @@ void Enemy::update(float time, float deltaT)
 
 float Enemy::_jitter(float angle)
 {
-    float asdf = rand() % (Aiminess * 2) - Aiminess;
+    float asdf = float(rand() % (Aiminess * 2) - Aiminess);
     return angle + asdf;
 }
 
