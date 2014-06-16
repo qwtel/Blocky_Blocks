@@ -33,7 +33,7 @@ static const float FallSpeed = 32.0; //units per second
 
 Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) :
     ModelInstance(instances, collisionWorld),
-    _position(-40, 40, 40),
+    _position(-40, 20, 40),
     _horizontalAngle(135.0f),
     _verticalAngle(0.0f),
     _rotateDirection(),
@@ -48,7 +48,7 @@ Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instanc
     material = mat;
     transform = glm::translate(mat4(), _position);
 
-    btBoxShape* box = new btBoxShape(btVector3(1,1,1));
+    btBoxShape* box = new btBoxShape(btVector3(1.2f, 1.2f, 1.2f));
     box->setMargin(0.f);
 
     collisionObject = new btCollisionObject();
