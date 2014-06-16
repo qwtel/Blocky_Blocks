@@ -25,7 +25,7 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<Mo
 
         if(-6 < posx < 6 && -6 < posz < 6){posx += 20 + (rand() % 10 -5);}
 
-        _position = vec3(posx, 40, posz); 
+        _position = vec3(posx, 30, posz); 
     }
     else{
         int posx = rand() % 94 - 47;
@@ -33,7 +33,7 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<Mo
 
         if(-6 < posx < 6 && -6 < posz < 6){posx += 20 + (rand() % 10 -5);}
 
-        _position = vec3(posx, 40, posz); 
+        _position = vec3(posx, 30, posz); 
     }
 
     shooting = true;
