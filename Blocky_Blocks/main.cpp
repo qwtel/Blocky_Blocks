@@ -54,8 +54,6 @@ static const int SHADOWMAP_SIZE = atoi(cfg.find("shadowMapSize")->second.c_str()
 static const int NumEnemies = atoi(cfg.find("numEnemies")->second.c_str());
 static const int KillsToWin = atoi(cfg.find("killsToWin")->second.c_str());
 
-static const bool ShowShadowMap = atoi(cfg.find("showShadowMap")->second.c_str()) == 0 ? false : true;
-
 static const bool DrawParticles = atoi(cfg.find("drawParticles")->second.c_str()) == 0 ? false : true;
 static const int ParticleCount = atoi(cfg.find("particleCount")->second.c_str());
 static const int TimeToLive = atoi(cfg.find("particleTTL")->second.c_str());
@@ -65,6 +63,9 @@ static const bool DrawContours = atoi(cfg.find("drawContours")->second.c_str()) 
 
 static const bool BlockyDoomMode = atoi(cfg.find("blockyDoomMode")->second.c_str()) == 0 ? false : true;
 static const bool GodMode = atoi(cfg.find("godMode")->second.c_str()) == 0 ? false : true;
+
+static const bool ShowShadowMap = atoi(cfg.find("showShadowMap")->second.c_str()) == 0 ? false : true;
+static const string TexturePath = atoi(cfg.find("complexTexture")->second.c_str()) == 0 ? "Texture/noise.png" : "Texture/wooden-crate.jpg";
 
 // global variables
 GLFWwindow* window;
@@ -217,7 +218,7 @@ int main()
     createTeapotInstance();
     */
 
-    player = new Player(&gWoodenCrate, loadMaterial(vec3(132,213,219),"Texture/noise.png"), &instances, collisionWorld);
+    player = new Player(&gWoodenCrate, loadMaterial(vec3(132,213,219), TexturePath), &instances, collisionWorld);
 
     camera = new Camera(player);
 
@@ -392,7 +393,7 @@ void respawnEnemies(float time, float deltaT) {
     if(won){
         if(time - timeStamp >= 0.4){
 
-            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, loadMaterial(vec3(255,153,153),"Texture/noise.png"), &instances, collisionWorld, player->position());
+            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, loadMaterial(vec3(255,153,153), TexturePath), &instances, collisionWorld, player->position());
             timeStamp = time;
         }
 
@@ -409,7 +410,7 @@ void respawnEnemies(float time, float deltaT) {
     else{
 
         for (int i = 0; i < NumEnemies - currentEnemies; i++) {
-            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, loadMaterial(vec3(255,153,153),"Texture/noise.png"), &instances, collisionWorld,player->position());
+            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, loadMaterial(vec3(255,153,153), TexturePath), &instances, collisionWorld,player->position());
             currentEnemies++;
         }
     }
@@ -735,21 +736,11 @@ void drawParticles(mat4* data, vec3* colors, int size)
 
     // set the shader uniforms
     glUniformMatrix4fv(program->uniform("camera"), 1, GL_FALSE, glm::value_ptr(camera->matrix()));
-    glUniform3fv(program->uniform("cameraPosition"), 1, glm::value_ptr(camera->position()));
-
-    // bind the texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, material->texture->object());
-    glUniform1i(program->uniform("tex"), 0);
 
     glUniform3fv(program->uniform("light.position"), 1, glm::value_ptr(light.position));
     glUniform3fv(program->uniform("light.intensities"), 1, glm::value_ptr(light.intensities));
     glUniform1f(program->uniform("light.attenuation"), light.attenuation);
     glUniform1f(program->uniform("light.ambientCoefficient"), light.ambientCoefficient);
-
-    //glUniform3fv(program->uniform("material.color"), 1, glm::value_ptr(material->color)); 
-    glUniform3fv(program->uniform("material.specularColor"), 1, glm::value_ptr(material->specularColor));
-    glUniform1f(program->uniform("material.shininess"), material->shininess);
 
     glDrawElementsInstanced(asset->drawType, asset->drawCount, GL_UNSIGNED_INT, 0, size);
 
@@ -784,22 +775,21 @@ void drawParticlesContour(mat4* data, vec3* colors, int size)
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+static const mat4 biasMatrix = mat4(
+    0.5, 0.0, 0.0, 0.0, 
+    0.0, 0.5, 0.0, 0.0,
+    0.0, 0.0, 0.5, 0.0,
+    0.5, 0.5, 0.5, 1.0
+    );
+
 void drawInstance(const ModelInstance& inst)
 {
     ModelAsset* asset = inst.asset;
     Material* material = inst.material;
     Program* program = asset->program;
 
-    mat4 biasMatrix = mat4(
-        0.5, 0.0, 0.0, 0.0, 
-        0.0, 0.5, 0.0, 0.0,
-        0.0, 0.0, 0.5, 0.0,
-        0.5, 0.5, 0.5, 1.0
-        );
-
     mat4 depthMVP = calcDepthMatrix(inst);
     mat4 depthBiasMVP = biasMatrix * depthMVP;
-
 
     // projection
 
@@ -807,7 +797,6 @@ void drawInstance(const ModelInstance& inst)
     shootDir = glm::normalize(glm::rotate(shootDir, player->_horizontalAngle, vec3(0,1,0)));
 
     mat4 projectorP = glm::perspective(3.0f, 1.f, 0.1f, 200.f);
-    //mat4 projectorP = glm::ortho<float>(-1.5,1.5,-1.5,1.5, .1f, 200);
     mat4 projectorV = glm::lookAt(player->position() + vec3(0,1,0) + shootDir, player->position() + vec3(0,1,0) + 2.f * shootDir, vec3(0,1,0));
 
     mat4 mModel = inst.transform;
@@ -963,7 +952,7 @@ static Program* loadShaders()
 
 static Program* loadShadersContour() 
 {
-    Shader* vertexShader = new Shader(Assets("Shader/vertexShader.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* vertexShader = new Shader(Assets("Shader/vertexShaderContour.vert").c_str(), GL_VERTEX_SHADER);
     Shader* fragmentShader = new Shader(Assets("Shader/blackShader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
@@ -1036,7 +1025,7 @@ static void importScene(const std::string& pFile) {
 
 static void createWorldInstance()
 {
-    Material* m = loadMaterial(vec3(192,158,233),"Texture/noise.png");
+    Material* m = loadMaterial(vec3(192,158,233), TexturePath);
     btTriangleMesh* triMesh = pAIMesh2btTriangleMesh(meshes[1]->mesh);
     world = new World(&gWorld, m, triMesh, &instances, collisionWorld);
 }
@@ -1145,10 +1134,6 @@ static void loadWoodenCrateAsset()
     glEnableVertexAttribArray(instancingProgram->attrib("vertNormal"));
     glVertexAttribPointer(instancingProgram->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.uvBuffer);
-    glEnableVertexAttribArray(instancingProgram->attrib("vertTexCoord"));
-    glVertexAttribPointer(instancingProgram->attrib("vertTexCoord"), 3, GL_FLOAT, GL_FALSE,  0,0);
-
     glGenBuffers(1, &instancingVbo);
     glBindBuffer(GL_ARRAY_BUFFER, instancingVbo);
     GLuint pos = instancingProgram->attrib("model");
@@ -1209,12 +1194,6 @@ static void loadWoodenCrateAsset()
     glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.positionBuffer);
     glEnableVertexAttribArray(gWoodenCrate.shadowProgram->attrib("vert"));
     glVertexAttribPointer(gWoodenCrate.shadowProgram->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-    /*
-    glBindBuffer(GL_ARRAY_BUFFER, gWoodenCrate.normalBuffer);
-    glEnableVertexAttribArray(shadowProgramCube->attrib("vertNormal"));
-    glVertexAttribPointer(shadowProgramCube->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
-    */
 
     // unbind the VAO
     glBindVertexArray(0);
@@ -1292,12 +1271,6 @@ static void loadWorldAsset()
     glEnableVertexAttribArray(gWorld.shadowProgram->attrib("vert"));
     glVertexAttribPointer(gWorld.shadowProgram->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    /*
-    glBindBuffer(GL_ARRAY_BUFFER, gWorld.normalBuffer);
-    glEnableVertexAttribArray(shadowProgramWorld->attrib("vertNormal"));
-    glVertexAttribPointer(shadowProgramWorld->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
-    */
-
     // unbind the VAO
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1374,12 +1347,6 @@ static void loadTeapotAsset()
     glEnableVertexAttribArray(gTeapot.shadowProgram->attrib("vert"));
     glVertexAttribPointer(gTeapot.shadowProgram->attrib("vert"), 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    /*
-    glBindBuffer(GL_ARRAY_BUFFER, gTeapot.normalBuffer);
-    glEnableVertexAttribArray(shadowProgramWorld->attrib("vertNormal"));
-    glVertexAttribPointer(shadowProgramWorld->attrib("vertNormal"), 3, GL_FLOAT, GL_FALSE,  0,0);
-    */
-
     // unbind the VAO
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1388,7 +1355,7 @@ static void loadTeapotAsset()
 
 static void createTeapotInstance()
 {
-    Material* m = loadMaterial(vec3(255,255,255),"Texture/noise.png");
+    Material* m = loadMaterial(vec3(255,255,255), TexturePath);
     btTriangleMesh* triMesh = pAIMesh2btTriangleMesh(meshes[2]->mesh);
     cow = new Teapot(&gTeapot, m, triMesh, &instances, collisionWorld);
 }

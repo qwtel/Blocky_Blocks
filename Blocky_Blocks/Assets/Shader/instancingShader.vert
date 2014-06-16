@@ -10,12 +10,10 @@ in vec2 vertTexCoord;
 
 out vec3 fragVert;
 out vec3 fragNormal;
-out vec2 fragTexCoord;
 flat out mat4 fragModel;
 flat out vec3 fragMaterialColor;
 
 void main() {
-	fragTexCoord = vertTexCoord;
 	fragNormal = vertNormal;
 	fragVert = vert;
 	fragModel = model;
