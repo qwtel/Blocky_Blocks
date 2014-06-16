@@ -212,11 +212,11 @@ int main()
     createWorldInstance();
 
     //initialise teapot
-    /*
+    
     importScene(Assets("Models/teapot.obj"));
     loadTeapotAsset();
     createTeapotInstance();
-    */
+    
 
     player = new Player(&gWoodenCrate, loadMaterial(vec3(132,213,219), TexturePath), &instances, collisionWorld);
 

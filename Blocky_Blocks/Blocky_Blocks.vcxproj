@@ -140,14 +140,6 @@
     <Image Include="Assets\Texture\hazard.png" />
     <Image Include="Assets\Texture\wooden-crate.jpg" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\BulletCollision\BulletCollision.vcxproj">
-      <Project>{f8397150-b5df-4d28-9b93-44eea14b099c}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\LinearMath\LinearMath.vcxproj">
-      <Project>{5d33a87f-e51d-48f0-8f4e-84dbf1928f86}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
