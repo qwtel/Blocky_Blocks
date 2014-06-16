@@ -62,15 +62,15 @@ void main() {
     
     if (shadowCoord.w > 0) {
         vec2 offset = shadowCoord.xy;
-        offset.x -= 0.04;
-        offset.y -= 0.04;
+        offset.x -= 0.08;
+        offset.y -= 0.08;
 
         visibility = texture(shadowMap, vec3((offset / shadowCoord.w)+bias, (shadowCoord.z - bias) / shadowCoord.w));
 
         for(int i=0;i<7;i++){
-            offset.x += 0.01;
+            offset.x += 0.02;
             for(int i=0;i<7;i++){
-                offset.y += 0.01;
+                offset.y += 0.02;
                 visibility += texture(shadowMap, vec3((offset / shadowCoord.w)+bias, (shadowCoord.z - bias) / shadowCoord.w));
             }
         }

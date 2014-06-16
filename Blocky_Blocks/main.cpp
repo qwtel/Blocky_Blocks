@@ -575,6 +575,9 @@ void draw()
     glCullFace(GL_BACK);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+    vec3 bg = vec3(225,209,244) / 255.0f;
+    glClearColor(bg.r, bg.g, bg.b, 1);
+
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     if (ShowShadowMap) {
@@ -609,11 +612,6 @@ void draw()
     }
 
     glViewport(0,0,SCREEN_SIZE.x,SCREEN_SIZE.y);
-
-    // clear the frame and depth buffer
-    vec3 bg = vec3(225,209,244) / 255.0f;
-    glClearColor(bg.r, bg.g, bg.b, 1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // cel shader
     glUseProgram(player->asset->program->object());
