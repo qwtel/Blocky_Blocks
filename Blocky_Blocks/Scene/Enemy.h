@@ -17,7 +17,7 @@ using namespace glm;
 class Enemy : public Player
 {
 public:
-    Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld);
+    Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld, vec3 playerPos);
     virtual ~Enemy(void);
 
     virtual void update(float t, float deltaT);

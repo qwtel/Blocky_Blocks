@@ -310,7 +310,7 @@ void update(double time, double deltaT)
     if(won){
         if(time - timeStamp >= 0.3){
 
-            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
+            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld, player->position());
             timeStamp = time;
         }
 
@@ -327,7 +327,7 @@ void update(double time, double deltaT)
     else{
 
         for (int i = 0; i < NumEnemies - currentEnemies; i++) {
-            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld);
+            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld,player->position());
             currentEnemies++;
         }
     }
@@ -442,6 +442,8 @@ void update(double time, double deltaT)
     }
     if(won == false & killCounter >= KillsToWin){
         won = true;
+        cout << "YOU WON!!! TIME: ";
+        cout << time << endl;
         timeStamp = time;
     }
     // update "particles"

@@ -12,29 +12,77 @@ static const int Shootiness = 2;
 // 10 -> will aim at max 10 degrees off target
 static const int Aiminess = 10;
 
-Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) : 
+Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld, vec3 playerPos) : 
     Player(ma, mat, instances, collisionWorld),
     _enemy(of),
     _lastMove(time),
     _waitTime(rand() % 2)
 {
-    if(time < 3){
+    int posx = 0;
+    int posz = 0;
 
-        int posx = rand() % 47;
-        int posz = -(rand() % 47);
+    if(playerPos.x > 0 && playerPos.z > 0){
 
-        if(-6 < posx < 6 && -6 < posz < 6){posx += 20 + (rand() % 10 -5);}
+        posx = rand() % 94 - 47;
 
-        _position = vec3(posx, 40, posz); 
+        if(posx >= 0){
+
+            posz = -(rand() % 40)-7;
+        }
+        else{
+
+            posz = rand() % 94 - 47;
+        }
+
+    }
+    else if(playerPos.x > 0 && playerPos.z < 0){
+
+        posx = rand() % 94 - 47;
+
+        if(posx >= 0){
+
+            posz = rand() % 40 + 7;
+        }
+        else{
+
+            posz = rand() % 94 - 47;
+        }
+    }
+    else if(playerPos.x < 0 && playerPos.z > 0){
+
+        posx = rand() % 94 - 47;
+
+        if(posx >= 0){
+
+            posz = rand() % 94 - 47;
+
+        }
+        else{
+
+            posz = -(rand() % 40) - 7;
+        }
+    }
+    else if(playerPos.x < 0 && playerPos.z < 0){
+
+        posx = rand() % 94 - 47;
+
+        if(posx >= 0){
+
+            posz = rand() % 94 - 47;
+
+        }
+        else{
+
+            posz = rand() % 40 + 7;
+        }
     }
     else{
-        int posx = rand() % 94 - 47;
-        int posz = rand() % 94 - 47;
-
-        if(-6 < posx < 6 && -6 < posz < 6){posx += 20 + (rand() % 10 -5);}
-
-        _position = vec3(posx, 40, posz); 
+        posx = rand() % 94 - 47;
+        posz = rand() % 94 - 47;
     }
+
+
+    _position = vec3(posx, 40, posz);
 
     shooting = true;
     //printf("%f, %f, %f\n", _position.x, _position.y, _position.z);
