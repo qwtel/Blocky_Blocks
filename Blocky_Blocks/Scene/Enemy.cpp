@@ -52,7 +52,7 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<Mo
 
         posx = rand() % 94 - 47;
 
-        if(posx >= 0){
+        if(posx > 0){
 
             posz = rand() % 94 - 47;
 
@@ -66,7 +66,7 @@ Enemy::Enemy(ModelAsset* ma, float time, Player* of, Material* mat, std::list<Mo
 
         posx = rand() % 94 - 47;
 
-        if(posx >= 0){
+        if(posx > 0){
 
             posz = rand() % 94 - 47;
 
