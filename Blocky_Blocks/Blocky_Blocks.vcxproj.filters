@@ -57,7 +57,7 @@
     <ClCompile Include="Scene\Particle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Cow.cpp">
+    <ClCompile Include="Scene\Teapot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -98,32 +98,25 @@
     <ClInclude Include="cfgReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Cow.h">
+    <ClInclude Include="Scene\Teapot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\Shader\cameraVertexShader.vert" />
-    <None Include="Assets\Shader\lightingFragmentShader.frag" />
-    <None Include="Assets\Shader\textureFragmentShader.frag" />
-    <None Include="Assets\Shader\textureVertexShader.vert" />
-    <None Include="Assets\Shader\vertexshader.vert" />
     <None Include="Assets\Models\cube.model" />
     <None Include="Assets\Models\world.model" />
-    <None Include="Assets\Shader\celShader.frag" />
     <None Include="Assets\Shader\instancingShader.vert" />
-    <None Include="Assets\Shader\instancingShader2.vert" />
     <None Include="Assets\Shader\instancingCelShader.frag" />
     <None Include="Assets\Shader\depthShader.vert" />
     <None Include="Assets\Shader\depthShader.frag" />
     <None Include="Assets\Shader\shadowCelShader.frag" />
-    <None Include="Assets\Shader\lightingVertexShader.vert" />
     <None Include="Assets\Shader\shadowVertexShader.vert" />
     <None Include="config.cfg" />
     <None Include="Assets\Shader\shadowFragmentShader.frag" />
-    <None Include="Assets\Shader\instancingShader.frag" />
     <None Include="Assets\Shader\debugShadow.frag" />
     <None Include="Assets\Shader\debugShadow.vert" />
+    <None Include="Assets\Shader\instancingShaderContour.vert" />
+    <None Include="Assets\Shader\vertexShader.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Texture\block.png">
@@ -137,6 +130,6 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Assets\Shader\fragmentshader.frag" />
+    <Text Include="Assets\Shader\blackShader.frag" />
   </ItemGroup>
 </Project>

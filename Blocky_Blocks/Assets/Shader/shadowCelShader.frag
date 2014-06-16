@@ -1,13 +1,13 @@
 #version 330
 
+uniform int UseCelShade;
+
 uniform mat4 model;
 uniform vec3 cameraPosition;
 
 uniform sampler2D tex;
 uniform sampler2D targetTex;
 uniform sampler2DShadow shadowMap;
-
-uniform int UseCelShade;
 
 uniform struct Light {
     vec3 position;
@@ -35,7 +35,7 @@ out vec4 finalColor;
 
 const float bias = 0.0005;
 
-const float A = 0.08;
+const float A = 0.1;
 const float B = 0.15;
 const float C = 0.3;
 const float D = 0.45;

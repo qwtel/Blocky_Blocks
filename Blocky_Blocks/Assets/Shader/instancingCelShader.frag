@@ -1,19 +1,21 @@
 #version 330
 
+uniform int UseCelShade;
+
 uniform sampler2D tex;
 uniform vec3 cameraPosition;
 
 uniform struct Light {
-	vec3 position;
-	vec3 intensities;
-	float attenuation;
-	float ambientCoefficient;
+    vec3 position;
+    vec3 intensities;
+    float attenuation;
+    float ambientCoefficient;
 } light;
 
 uniform struct Material {
-	vec3 color;
-	vec3 specularColor;
-	float shininess;
+    vec3 color;
+    vec3 specularColor;
+    float shininess;
 } material;
 
 in vec3 fragVert;
@@ -34,53 +36,57 @@ const float F = 0.75;
 const float G = 0.9;
 const float H = 1.0;
 
+float celShade(float shade) {
+    if (shade < A) shade = 0.0;
+    else if (shade < B) shade = B;
+    else if (shade < C) shade = C;
+    else if (shade < D) shade = D;
+    else if (shade < E) shade = E;
+    else if (shade < F) shade = F;
+    else if (shade < G) shade = G;
+    else shade = H;
+    return shade;
+}
+
 void main() {
-	mat4 model = fragModel;
+    mat4 model = fragModel;
 
-	vec3 normal = normalize(transpose(inverse(mat3(model))) * fragNormal);
-	vec3 surfacePos = vec3(model * vec4(fragVert, 1));
-	vec4 surfaceColor = vec4((fragMaterialColor / 255.0), 1) * texture(tex, fragTexCoord);
-	vec3 surfaceToLight = normalize(light.position - surfacePos);
-	vec3 surfaceToCamera = normalize(cameraPosition - surfacePos);
+    vec3 normal = normalize(transpose(inverse(mat3(model))) * fragNormal);
+    vec3 surfacePos = vec3(model * vec4(fragVert, 1));
+    vec4 surfaceColor = vec4((fragMaterialColor / 255.0), 1) * texture(tex, fragTexCoord);
+    vec3 surfaceToLight = normalize(light.position - surfacePos);
+    vec3 surfaceToCamera = normalize(cameraPosition - surfacePos);
 
-	//ambient
-	vec3 ambient = light.ambientCoefficient * (surfaceColor.rgb * light.intensities);
+    //ambient
+    vec3 ambient = light.ambientCoefficient * (surfaceColor.rgb * light.intensities);
 
-	//diffuse
-	float diffuseCoefficient = max(0.0, dot(normal, surfaceToLight));
+    //diffuse
+    float diffuseCoefficient = max(0.0, dot(normal, surfaceToLight));
 
-	if (diffuseCoefficient < A) diffuseCoefficient = 0.0;
-	else if (diffuseCoefficient < B) diffuseCoefficient = B;
-	else if (diffuseCoefficient < C) diffuseCoefficient = C;
-	else if (diffuseCoefficient < D) diffuseCoefficient = D;
-	else if (diffuseCoefficient < E) diffuseCoefficient = E;
-	else if (diffuseCoefficient < F) diffuseCoefficient = F;
-	else if (diffuseCoefficient < G) diffuseCoefficient = G;
-	else diffuseCoefficient = H;
+    if (UseCelShade == 1)
+        diffuseCoefficient = celShade(diffuseCoefficient);
 
-	vec3 diffuse = diffuseCoefficient * (surfaceColor.rgb * light.intensities);
+    vec3 diffuse = diffuseCoefficient * (surfaceColor.rgb * light.intensities);
 
-	//specular
-	float specularCoefficient = 0.0;
-	if(diffuseCoefficient > 0.0) {
-	    specularCoefficient = pow(max(0.0, dot(surfaceToCamera, reflect(-surfaceToLight, normal))), material.shininess);
-	}
+    //specular
+    float specularCoefficient = 0.0;
+    if(diffuseCoefficient > 0.0) {
+        specularCoefficient = pow(max(0.0, dot(surfaceToCamera, reflect(-surfaceToLight, normal))), material.shininess);
+    }
 
-	if (specularCoefficient < A) specularCoefficient = 0.0;
-	else if (specularCoefficient < B) specularCoefficient = B;
-	else if (specularCoefficient < C) specularCoefficient = C;
-	else specularCoefficient = D;
+    if (UseCelShade == 1)
+        specularCoefficient = celShade(specularCoefficient);
 
-	specularCoefficient *= 0.5;
+    vec3 specular = specularCoefficient * material.specularColor * light.intensities;
 
-	vec3 specular = specularCoefficient * material.specularColor * light.intensities;
+    specular *= 0.5;
 
-	//attenuation
-	float distanceToLight = length(light.position - surfacePos);
-	float attenuation = 1.0 / (1.0 + light.attenuation * pow(distanceToLight, 2));
+    //attenuation
+    float distanceToLight = length(light.position - surfacePos);
+    float attenuation = 1.0 / (1.0 + light.attenuation * pow(distanceToLight, 2));
 
-	//linear color (color before gamma correction)
-	vec3 linearColor = ambient + attenuation * (diffuse + specular);
+    //linear color (color before gamma correction)
+    vec3 linearColor = ambient + attenuation * (diffuse + specular);
 
-	finalColor = vec4(linearColor, 1);
+    finalColor = vec4(linearColor, 1);
 }

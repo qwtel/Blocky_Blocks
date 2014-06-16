@@ -1,6 +1,6 @@
-#include "Cow.h"
+#include "Teapot.h"
 
-Cow::Cow(ModelAsset* ma, Material* mat, btTriangleMesh* triMesh, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) :
+Teapot::Teapot(ModelAsset* ma, Material* mat, btTriangleMesh* triMesh, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) :
     ModelInstance(instances, collisionWorld)
 {
     asset = ma;
@@ -22,10 +22,10 @@ Cow::Cow(ModelAsset* ma, Material* mat, btTriangleMesh* triMesh, std::list<Model
 }
 
 
-Cow::~Cow(void)
+Teapot::~Teapot(void)
 {
 }
 
-void Cow::collide(ModelInstance* other, vec3 pA, vec3 pB)
+void Teapot::collide(ModelInstance* other, vec3 pA, vec3 pB)
 {
 }

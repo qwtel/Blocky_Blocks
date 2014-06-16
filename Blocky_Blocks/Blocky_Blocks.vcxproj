@@ -84,7 +84,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Scene\Cow.cpp" />
+    <ClCompile Include="Scene\Teapot.cpp" />
     <ClCompile Include="Scene\Mesh.cpp" />
     <ClCompile Include="Scene\Enemy.cpp" />
     <ClCompile Include="Scene\Bullet.cpp" />
@@ -102,7 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cfgReader.h" />
-    <ClInclude Include="Scene\Cow.h" />
+    <ClInclude Include="Scene\Teapot.h" />
     <ClInclude Include="Scene\Mesh.h" />
     <ClInclude Include="Scene\Enemy.h" />
     <ClInclude Include="Scene\Bullet.h" />
@@ -116,29 +116,22 @@
     <ClInclude Include="Scene\World.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Assets\Shader\fragmentshader.frag" />
+    <Text Include="Assets\Shader\blackShader.frag" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Models\cube.model" />
     <None Include="Assets\Models\world.model" />
-    <None Include="Assets\Shader\cameraVertexShader.vert" />
-    <None Include="Assets\Shader\celShader.frag" />
     <None Include="Assets\Shader\debugShadow.frag" />
     <None Include="Assets\Shader\debugShadow.vert" />
     <None Include="Assets\Shader\depthShader.frag" />
     <None Include="Assets\Shader\depthShader.vert" />
     <None Include="Assets\Shader\instancingCelShader.frag" />
-    <None Include="Assets\Shader\instancingShader.frag" />
     <None Include="Assets\Shader\instancingShader.vert" />
-    <None Include="Assets\Shader\instancingShader2.vert" />
-    <None Include="Assets\Shader\lightingFragmentShader.frag" />
-    <None Include="Assets\Shader\lightingVertexShader.vert" />
+    <None Include="Assets\Shader\instancingShaderContour.vert" />
     <None Include="Assets\Shader\shadowCelShader.frag" />
     <None Include="Assets\Shader\shadowFragmentShader.frag" />
     <None Include="Assets\Shader\shadowVertexShader.vert" />
-    <None Include="Assets\Shader\textureFragmentShader.frag" />
-    <None Include="Assets\Shader\textureVertexShader.vert" />
-    <None Include="Assets\Shader\vertexshader.vert" />
+    <None Include="Assets\Shader\vertexShader.vert" />
     <None Include="config.cfg" />
   </ItemGroup>
   <ItemGroup>

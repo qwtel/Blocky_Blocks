@@ -12,11 +12,11 @@ using namespace glm;
 
 #include "Asset.cpp"
 
-class Cow : public ModelInstance
+class Teapot : public ModelInstance
 {
 public:
-    Cow(ModelAsset* ma, Material* mat, btTriangleMesh* triMesh, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld);
-    virtual ~Cow(void);
+    Teapot(ModelAsset* ma, Material* mat, btTriangleMesh* triMesh, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld);
+    virtual ~Teapot(void);
     virtual void collide(ModelInstance* other, vec3 pA, vec3 pB);
     virtual void update(float a, float b) {};
 private:
