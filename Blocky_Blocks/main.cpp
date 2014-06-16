@@ -591,25 +591,15 @@ void draw()
 
         glBindBuffer(GL_ARRAY_BUFFER, quadVertexbuffer);
 
-        // Bind our texture in Texture Unit 0
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, depthTexture);
-        // Set our "renderedTexture" sampler to user Texture Unit 0
+  
         glUniform1i(debugShadowProgram->uniform("texture"), 3);
 
-        // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(
-            0,                  // attribute 0. No particular reason for 0, but must match the layout in the shader.
-            3,                  // size
-            GL_FLOAT,           // type
-            GL_FALSE,           // normalized?
-            0,                  // stride
-            (void*)0            // array buffer offset
-            );
+        glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0);
 
-        // Draw the triangle !
-        glDrawArrays(GL_TRIANGLES, 0, 6); // 3 indices starting at 0 -> 1 triangle
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glDisableVertexAttribArray(0);
     }

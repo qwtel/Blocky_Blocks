@@ -19,7 +19,7 @@ static const vec3 Right = -Left;
 static const vec3 RightRotate = -LeftRotate;
 
 static const float DegreePerSecond = 360.0f;
-static const float Velocity = 100.f;
+static const float Velocity = 60.f;
 
 Bullet::Bullet(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld, Player* owner) :
     ModelInstance(instances, collisionWorld),

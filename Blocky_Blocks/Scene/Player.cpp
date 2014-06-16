@@ -23,8 +23,8 @@ static const float ShootDuration = 0.15f;
 static const float MinVerticalAngle = -25.0f;
 static const float MaxVerticalAngle = 65.0f;
 
-static const float MoveSpeed = 16.0f; //units per second
-static const float MoveDuration = 0.12f; //duration of animation
+static const float MoveSpeed = 12.0f; //units per second
+static const float MoveDuration = 0.16f; //duration of animation
 
 static const float JumpDuration = 0.5f; //duration of animation
 static const float JumpHeight = 3.0f;
