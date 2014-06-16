@@ -178,6 +178,12 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    //glEnable (GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     bool running = true;
     double lastTime = 0;
 
@@ -229,8 +235,6 @@ int main()
     //light.direction=normalize(player->position()-camera->position());
     light.direction = vec3(0,-1,0);
     light.range = 100;
-
-    glEnable(GL_CULL_FACE);
 
     glGenVertexArrays(1, &shadowMappingVao);
     glBindVertexArray(shadowMappingVao);
@@ -645,6 +649,9 @@ void draw()
         }
 
         // cel shader
+        glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         glUseProgram(instancingProgram->object());
         glCullFace(GL_BACK);
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
@@ -659,6 +666,8 @@ void draw()
 
             drawParticlesContour(data, colors, size);
         }
+
+        glDisable(GL_BLEND);
 
         delete data;
         delete colors;
