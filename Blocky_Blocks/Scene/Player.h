@@ -86,5 +86,7 @@ private:
     float _rotateStartHorizontalAngle;
 
     bool _isColliding;
+
+    void undoMovement();
 };
 

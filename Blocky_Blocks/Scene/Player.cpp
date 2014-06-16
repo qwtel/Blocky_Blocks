@@ -35,7 +35,7 @@ Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instanc
     ModelInstance(instances, collisionWorld),
     _position(-40, 40, 40),
     _horizontalAngle(135.0f),
-   _verticalAngle(0.0f),
+    _verticalAngle(0.0f),
     _rotateDirection(),
     _isRotating(false),
     _isColliding(false),
@@ -79,7 +79,6 @@ void Player::update(float time, float deltaT)
     _time = time;
     _deltaT = deltaT;
 
-
     if (_isJumping) {
         float x = (time - _jumpStart) / JumpDuration;
 
@@ -92,8 +91,12 @@ void Player::update(float time, float deltaT)
         //printf("f(%f) = %f\n", x, height);
 
         _position.y = _jumpStartHeight + height * JumpHeight;
-    } else if (_isFalling) {
+    }
+
+    if (!_isColliding) {
         _position.y = _position.y - FallSpeed * deltaT;
+    } else {
+        _isJumping = false;
     }
 
     if (_isRotating) {
@@ -144,6 +147,8 @@ void Player::update(float time, float deltaT)
     transform = glm::rotate(transform, _rotateAngle.x, XAxis); 
 
     collisionObject->getWorldTransform().setFromOpenGLMatrix(glm::value_ptr(transform));
+
+    _isColliding = false;
 }
 
 void Player::_move(float time, vec3 direction, vec3 rotateDirection)
@@ -236,8 +241,17 @@ void Player::shoot(float time, float deltaT)
     }
 }
 
+void Player::undoMovement()
+{
+    _moveDirection = _moveDirection * -1.0f;
+    _rotateDirection = _rotateDirection * -1.0f;
+    _rotateStartPosition = _position;
+    _rotateStartHorizontalAngle = _horizontalAngle;
+}
+
 void Player::collide(ModelInstance* other, vec3 pA, vec3 pB) {
     if (Player* p = dynamic_cast<Player*>(other)) {
+        undoMovement();
     } else if (Bullet* b = dynamic_cast<Bullet*>(other)) {
         if (b->_owner != this) {
             if (Enemy* e = dynamic_cast<Enemy*>(this)) {
@@ -248,21 +262,18 @@ void Player::collide(ModelInstance* other, vec3 pA, vec3 pB) {
         }
     } else if (World* w = dynamic_cast<World*>(other)) {
         //printf("Is this happening all the time??");
+        _isColliding = true;
 
         if(pA.y < pB.y) {
-            _isFalling = false;
-            _isJumping = false;
+            // ???
         } else {
-            _isColliding = true;
-            _moveDirection = _moveDirection * -1.0f;
-            _rotateDirection = _rotateDirection * -1.0f;
-            _rotateStartPosition = _position;
-            _rotateStartHorizontalAngle = _horizontalAngle;
+            undoMovement();
         }
 
         //_position.y = _position.y + FallSpeed * _deltaT;
 
     } else {
         printf("Collision with unkown type\n");
+        undoMovement();
     }
 }

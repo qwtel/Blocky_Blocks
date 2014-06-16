@@ -84,6 +84,7 @@ Teapot* cow;
 
 Texture2* targetTexture;
 
+bool gameStarted = false;
 int currentEnemies = 0;
 int killCounter = 0;
 bool won = false;
@@ -328,9 +329,11 @@ void update(double timed, double deltaTd)
 
     doCollisionThingy(time, deltaT);
     checkUserInput(time, deltaT);
-    updateInstances(time, deltaT);
 
-    updateParticles(time, deltaT);
+    if (gameStarted) {
+        updateInstances(time, deltaT);
+        updateParticles(time, deltaT);
+    }
 
     rotateCamera(time, deltaT);
     moveSpotLight(time, deltaT);
@@ -414,22 +417,28 @@ void checkUserInput(float time, float deltaT)
 {
     if (!lost) {
         if(glfwGetKey(window, 'S')){
+            gameStarted = true;
             player->moveBackward(time, deltaT);
         } else if(glfwGetKey(window, 'W')){
+            gameStarted = true;
             player->moveForward(time, deltaT);
         }
 
         if(glfwGetKey(window, 'A')){
+            gameStarted = true;
             player->moveLeft(time, deltaT);
         } else if(glfwGetKey(window, 'D')){
+            gameStarted = true;
             player->moveRight(time, deltaT);
         }
 
         if(glfwGetKey(window, GLFW_KEY_SPACE)) {
+            gameStarted = true;
             player->jump(time, deltaT);
         }
 
         if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
+            gameStarted = true;
             player->shoot(time, deltaT);
         }
     }
@@ -650,7 +659,7 @@ void draw()
 
         // cel shader
         glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glUseProgram(instancingProgram->object());
         glCullFace(GL_BACK);
