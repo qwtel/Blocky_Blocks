@@ -29,7 +29,7 @@ static const float MoveDuration = 0.12; //duration of animation
 static const float JumpDuration = 0.5; //duration of animation
 static const float JumpHeight = 3.0f;
 
-static const float FallSpeed = 16.0; //units per second
+static const float FallSpeed = 32.0; //units per second
 
 Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instances, btCollisionWorld* collisionWorld) :
     ModelInstance(instances, collisionWorld),

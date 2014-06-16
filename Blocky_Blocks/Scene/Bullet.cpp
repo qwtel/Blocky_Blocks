@@ -56,7 +56,7 @@ Bullet::~Bullet(void)
 
 void Bullet::shoot(vec3 from, float x, float y, vec3 rotateDirection)
 {
-    _posi = from;
+    _posi = from + vec3(0,1,0);
     _horizontalAngle = x;
     _verticalAngle = y;
     _rotateDirection = rotateDirection;

@@ -808,7 +808,7 @@ void drawInstance(const ModelInstance& inst)
 
     mat4 projectorP = glm::perspective(3.0f, 1.f, 0.1f, 200.f);
     //mat4 projectorP = glm::ortho<float>(-1.5,1.5,-1.5,1.5, .1f, 200);
-    mat4 projectorV = glm::lookAt(player->position() + shootDir, player->position() + 2.f * shootDir, vec3(0,1,0));
+    mat4 projectorV = glm::lookAt(player->position() + vec3(0,1,0) + shootDir, player->position() + vec3(0,1,0) + 2.f * shootDir, vec3(0,1,0));
 
     mat4 mModel = inst.transform;
     mat4 texMVP = projectorP * projectorV * mModel;
