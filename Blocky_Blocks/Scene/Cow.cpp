@@ -7,7 +7,7 @@ Cow::Cow(ModelAsset* ma, Material* mat, btTriangleMesh* triMesh, std::list<Model
     transform = translate(mat4(), vec3(0,12,0));
     material = mat;
 
-    btCollisionShape* collisionShape = new btBvhTriangleMeshShape(triMesh, false);
+    btCollisionShape* collisionShape = new btBoxShape(btVector3(1,1,1));
 
     btTransform temp;
     temp.setFromOpenGLMatrix(glm::value_ptr(transform));

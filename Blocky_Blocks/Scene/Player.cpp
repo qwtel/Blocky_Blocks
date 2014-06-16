@@ -40,7 +40,7 @@ Player::Player(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instanc
     _isRotating(false),
     _isColliding(false),
     _isJumping(false),
-    _isFalling(true),
+    _isFalling(false),
     _shootStart(0.0f),
     _rotateAngle()
 {

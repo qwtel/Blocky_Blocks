@@ -29,13 +29,15 @@ Bullet::Bullet(ModelAsset* ma, Material* mat, std::list<ModelInstance*>* instanc
     _rotateAngle(),
     _owner(owner)
 {
+    float scale = 0.33;
+
     _rotateAngle = rand() % 360 + 1;
     // printf("%f\n", _rotateAngle);
     asset = ma;
-    transform = glm::scale(mat4(), vec3(0.33));
+    transform = glm::scale(mat4(), vec3(scale));
     material = mat;
 
-    btBoxShape* box = new btBoxShape(btVector3(0.33,0.33,0.33));
+    btBoxShape* box = new btBoxShape(btVector3(scale,scale,scale));
     box->setMargin(0.f);
 
     collisionObject = new btCollisionObject();

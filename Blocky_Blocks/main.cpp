@@ -42,6 +42,7 @@ using namespace glm;
 
 #include "cfgReader.h"
 
+// configs
 map<string,string> cfg = initCfg();
 
 const vec2 SCREEN_SIZE(atoi(cfg.find("screenWidth")->second.c_str()), atoi(cfg.find("screenHeight")->second.c_str()));
@@ -60,11 +61,10 @@ static const bool ShowShadowMap = atoi(cfg.find("showShadowMap")->second.c_str()
 static const int UseCelShade = atoi(cfg.find("useCelShade")->second.c_str());
 static const bool DrawContours = atoi(cfg.find("drawContours")->second.c_str()) == 0 ? false : true;
 
-static const bool CelShading = atoi(cfg.find("celShading")->second.c_str()) == 0 ? false : true;
-
 static const bool BlockyDoomMode = atoi(cfg.find("blockyDoomMode")->second.c_str()) == 0 ? false : true;
 static const bool GodMode = atoi(cfg.find("godMode")->second.c_str()) == 0 ? false : true;
 
+// global stuff
 GLFWwindow* window;
 Camera* camera;
 
@@ -82,11 +82,6 @@ int killCounter = 0;
 bool won = false;
 bool lost = false;
 double timeStamp = 0;
-
-GLuint positionBuffer;
-GLuint normalBuffer;
-GLuint indexBuffer;
-GLuint uvBuffer;
 
 Assimp::Importer* importer;
 vector<Mesh*> meshes;
@@ -107,7 +102,19 @@ GLuint debugShadowVao;
 Texture2* targetTexture;
 
 GLFWwindow* openWindow(int width, int height);
+
+// update methods
 void update(double time, double deltaT);
+void rotateCamera(float time, float deltaT);
+void doCollisionThingy(float time, float deltaT);
+void moveSpotLight(float time, float deltaT);
+void respawnEnemies(float time, float deltaT);
+void checkUserInput(float time, float deltaT);
+void updateParticles(float time, float deltaT);
+void updateInstances(float time, float deltaT);
+void checkGameOver(float time, float deltaT);
+
+// draw methods
 void draw();
 void drawInstance(const ModelInstance& inst);
 void drawContour(const ModelInstance& inst);
@@ -117,6 +124,7 @@ void drawInstanceDepth(const ModelInstance& inst);
 
 void cleanup();
 
+// static methods
 static void LoadWoodenCrateAsset();
 static Program* LoadShaders();
 static Program* LoadShadersContour();
@@ -148,7 +156,6 @@ Program* debugShadowProgram;
 
 int main() 
 {
-
     // (1) init everything you need
     window = openWindow(SCREEN_SIZE.x, SCREEN_SIZE.y);
 
@@ -245,7 +252,7 @@ int main()
     glGenVertexArrays(1, &debugShadowVao);
     glBindVertexArray(debugShadowVao);
 
-    debugShadowProgram = LoadDebugShadowShaders();
+    if (ShowShadowMap) debugShadowProgram = LoadDebugShadowShaders();
 
     static const GLfloat g_vertex_buffer_data[] = {
         -1.0f, -1.0f, 0.0f,
@@ -294,45 +301,22 @@ int main()
     glfwTerminate();
 }
 
-void update(double time, double deltaT) 
+void update(double timed, double deltaTd) 
 {
-    float deltaTf = float(deltaT);
-    float timef = float(time);
+    float deltaT = float(deltaTd);
+    float time = float(timed);
 
-    //printf("%i\n", particles.size());
-    //move light
-    gLight.position.z = gLight.position.z + 5;
-    gLight.direction = normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));
-    gLight.position = player->position() + gLight.direction * 2.f;
-    gLight.position.y += 3.f;
+    moveSpotLight(time, deltaT);
+    respawnEnemies(time, deltaT);
+    checkUserInput(time, deltaT);
+    updateInstances(time, deltaT);
+    doCollisionThingy(time, deltaT);
+    checkGameOver(time, deltaT);
+    updateParticles(time, deltaT);
+    rotateCamera(time, deltaT);
+}
 
-    //fireworks
-    if(won){
-        if(time - timeStamp >= 0.3){
-
-            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld, player->position());
-            timeStamp = time;
-        }
-
-    }
-    else if(lost){
-
-        if(time-timeStamp >= 0.5){
-            /* gLight.position = player->position();
-            gLight.position.y += 5;
-            gLight.direction = vec3(0,-1,0);*/
-        }
-    }
-    //spawn enemies
-    else{
-
-        for (int i = 0; i < NumEnemies - currentEnemies; i++) {
-            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld,player->position());
-            currentEnemies++;
-        }
-    }
-
-
+void doCollisionThingy(float time, float deltaT) {
     collisionWorld->performDiscreteCollisionDetection();
 
     int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
@@ -362,31 +346,88 @@ void update(double time, double deltaT)
             }
         }
     }
-    if(!lost){
+}
+
+void moveSpotLight(float time, float deltaT) {
+    if (!lost) {
+        //move light
+        gLight.position.z = gLight.position.z + 5;
+        gLight.direction = normalize(vec3(player->position().x-camera->position().x,0,player->position().z-camera->position().z));
+        gLight.position = player->position() + gLight.direction * 2.f;
+        gLight.position.y += 3.f;
+    } else {
+        gLight.range = 0;
+    }
+}
+
+void respawnEnemies(float time, float deltaT) {
+    //fireworks
+    if(won){
+        if(time - timeStamp >= 0.3){
+
+            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld, player->position());
+            timeStamp = time;
+        }
+
+    }
+    else if(lost){
+
+        if(time-timeStamp >= 0.5){
+            /* gLight.position = player->position();
+            gLight.position.y += 5;
+            gLight.direction = vec3(0,-1,0);*/
+        }
+    }
+    //spawn enemies
+    else{
+
+        for (int i = 0; i < NumEnemies - currentEnemies; i++) {
+            Enemy* enemy = new Enemy(&gWoodenCrate, time, player, GiveMaterial(vec3(255,153,153),"Texture/noise.png"), &gInstances, collisionWorld,player->position());
+            currentEnemies++;
+        }
+    }
+}
+
+void checkUserInput(float time, float deltaT) 
+{
+    if (!lost) {
         if(glfwGetKey(window, 'S')){
-            player->moveBackward(timef, deltaTf);
+            player->moveBackward(time, deltaT);
         } else if(glfwGetKey(window, 'W')){
-            player->moveForward(timef, deltaTf);
+            player->moveForward(time, deltaT);
         }
 
         if(glfwGetKey(window, 'A')){
-            player->moveLeft(timef, deltaTf);
+            player->moveLeft(time, deltaT);
         } else if(glfwGetKey(window, 'D')){
-            player->moveRight(timef, deltaTf);
+            player->moveRight(time, deltaT);
         }
 
         if(glfwGetKey(window, GLFW_KEY_SPACE)) {
-            player->jump(timef, deltaTf);
+            player->jump(time, deltaT);
         }
 
         if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1)) {
-            player->shoot(timef, deltaTf);
+            player->shoot(time, deltaT);
         }
     }
+}
+
+void checkGameOver(float time, float deltaT) {
+    if(won == false & killCounter >= KillsToWin){
+        won = true;
+        cout << "YOU WON!!! TIME: ";
+        cout << time << endl;
+        timeStamp = time;
+    }
+}
+
+void updateInstances(float time, float deltaT) {
     std::list<ModelInstance*>::const_iterator it;
     for(it = gInstances.begin(); it != gInstances.end();) {
         ModelInstance* instance = *it;
-        instance->update(timef, deltaTf);
+
+        instance->update(time, deltaT);
 
         //check if win condition is meet
         if(killCounter >= KillsToWin){
@@ -403,7 +444,7 @@ void update(double time, double deltaT)
 
             //death animation
             for (int i = 0; i < 250; i++) {
-                Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 40);
+                Particle* part = new Particle(instance->position(), instance->material, instance->asset, time, 40);
                 particles.push_back(part);
             }
         }
@@ -415,7 +456,7 @@ void update(double time, double deltaT)
         }
 
         if (instance->isMarkedDeleted()) {
-            printf("Deleted something of %s\n", typeid(*instance).name());
+            //printf("Deleted something of %s\n", typeid(*instance).name());
 
             if(typeid(*instance) == typeid(Enemy)){
                 currentEnemies--;
@@ -424,12 +465,12 @@ void update(double time, double deltaT)
 
             if (dynamic_cast<Bullet*>(instance)) {
                 for (int i = 0; i < 50; i++) {
-                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 20);
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, time, 20);
                     particles.push_back(part);
                 }
             } else if (dynamic_cast<Player*>(instance)) {
                 for (int i = 0; i < 250; i++) {
-                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, timef, 40);
+                    Particle* part = new Particle(instance->position(), instance->material, instance->asset, time, 40);
                     particles.push_back(part);
                 }
             }
@@ -440,18 +481,15 @@ void update(double time, double deltaT)
             ++it;
         }
     }
-    if(won == false & killCounter >= KillsToWin){
-        won = true;
-        cout << "YOU WON!!! TIME: ";
-        cout << time << endl;
-        timeStamp = time;
-    }
+}
+
+void updateParticles(float time, float deltaT) {
     // update "particles"
     std::list<Particle*>::const_iterator it2;
     for (it2 = particles.begin(); it2 != particles.end();) {
 
         Particle* part = *it2;
-        part->update(timef, deltaTf);
+        part->update(time, deltaT);
 
         if (part->_distance > TimeToLive) {
             it2 = particles.erase(it2);
@@ -460,21 +498,22 @@ void update(double time, double deltaT)
             ++it2;
         }
     }
+}
 
-    if(!lost){
-        //rotate camera based on mouse movement
-        const float mouseSensitivity = 0.1;
+void rotateCamera(float time, float deltaT)
+{
+    //rotate camera based on mouse movement
+    const float mouseSensitivity = 0.1;
 
-        double mouseX, mouseY;
-        glfwGetCursorPos(window, &mouseX, &mouseY);
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
 
-        float diffX = mouseX - CENTER.x;
-        float diffY = mouseY - CENTER.y;
+    float diffX = mouseX - CENTER.x;
+    float diffY = mouseY - CENTER.y;
 
-        camera->offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
+    camera->offsetOrienatation(mouseSensitivity * diffY, mouseSensitivity * diffX);
 
-        glfwSetCursorPos(window, CENTER.x, CENTER.y); //reset the mouse, so it doesn't go out of the window
-    }
+    glfwSetCursorPos(window, CENTER.x, CENTER.y); //reset the mouse, so it doesn't go out of the window
 }
 
 void draw() 
@@ -609,7 +648,7 @@ void draw()
     //glUseProgram(0);
 }
 
-static mat4 giveThatThing(const ModelInstance& inst) {
+static mat4 calcDepthMatrix(const ModelInstance& inst) {
     //glm::vec3 lightInvDir = glm::vec3(0.5,1,0);
 
     mat4 depthProjectionMatrix = glm::perspective<float>(90.0f, 1.0f, 2.0f, 200.f);
@@ -628,7 +667,7 @@ void drawInstanceDepth(const ModelInstance& inst){
     glUseProgram(program->object());
     glBindVertexArray(asset->shadowVao);
 
-    mat4 depthMVP = giveThatThing(inst);
+    mat4 depthMVP = calcDepthMatrix(inst);
 
     glUniformMatrix4fv(program->uniform("depthMVP"), 1, GL_FALSE, glm::value_ptr(depthMVP));
 
@@ -718,7 +757,7 @@ void drawInstance(const ModelInstance& inst)
         0.5, 0.5, 0.5, 1.0
         );
 
-    mat4 depthMVP = giveThatThing(inst);
+    mat4 depthMVP = calcDepthMatrix(inst);
     mat4 depthBiasMVP = biasMatrix * depthMVP;
 
 
@@ -803,12 +842,6 @@ void drawContour(const ModelInstance& inst)
 
 void cleanup()
 {
-    glDeleteVertexArrays(1, &gWoodenCrate.vao);
-    glDeleteBuffers(1, &positionBuffer);
-    glDeleteBuffers(1, &indexBuffer);
-    glDeleteBuffers(1, &normalBuffer);
-    glDeleteBuffers(1, &uvBuffer);
-
     importer->FreeScene();
     delete importer;
     for(unsigned int i = 0; i < meshes.size(); i++)
@@ -882,16 +915,9 @@ static Texture2* LoadTexture()
 
 static Program* LoadShaders() 
 {
-    if(CelShading){
-        Shader* vertexShader = new Shader(Assets("Shader/shadowVertexShader.vert").c_str(), GL_VERTEX_SHADER);
-        Shader* fragmentShader = new Shader(Assets("Shader/shadowCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
-        return new Program(vertexShader, fragmentShader);
-    }
-    else{
-        Shader* vertexShader = new Shader(Assets("Shader/shadowVertexShader.vert").c_str(), GL_VERTEX_SHADER);
-        Shader* fragmentShader = new Shader(Assets("Shader/shadowFragmentShader.frag").c_str(), GL_FRAGMENT_SHADER);
-        return new Program(vertexShader, fragmentShader);
-    }
+    Shader* vertexShader = new Shader(Assets("Shader/shadowVertexShader.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/shadowCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
+    return new Program(vertexShader, fragmentShader);
 
 }
 
@@ -904,16 +930,9 @@ static Program* LoadShadersContour()
 
 static Program* LoadShadersI() 
 {
-    if(CelShading){
-        Shader* vertexShader = new Shader(Assets("Shader/instancingShader.vert").c_str(), GL_VERTEX_SHADER);
-        Shader* fragmentShader = new Shader(Assets("Shader/instancingCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
-        return new Program(vertexShader, fragmentShader);
-    }
-    else{
-        Shader* vertexShader = new Shader(Assets("Shader/instancingShader.vert").c_str(), GL_VERTEX_SHADER);
-        Shader* fragmentShader = new Shader(Assets("Shader/instancingShader.frag").c_str(), GL_FRAGMENT_SHADER);
-        return new Program(vertexShader, fragmentShader);
-    }
+    Shader* vertexShader = new Shader(Assets("Shader/instancingShader.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/instancingCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
+    return new Program(vertexShader, fragmentShader);
 }
 
 static Program* LoadShaders2I() 
@@ -922,6 +941,7 @@ static Program* LoadShaders2I()
     Shader* fragmentShader = new Shader(Assets("Shader/fragmentshader.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
+
 static Program* LoadDepthShaders() 
 {
     Shader* vertexShader = new Shader(Assets("Shader/depthShader.vert").c_str(), GL_VERTEX_SHADER);
