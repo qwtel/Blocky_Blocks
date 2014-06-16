@@ -120,6 +120,10 @@
     <None Include="Assets\Shader\lightingVertexShader.vert" />
     <None Include="Assets\Shader\shadowVertexShader.vert" />
     <None Include="config.cfg" />
+    <None Include="Assets\Shader\shadowFragmentShader.frag" />
+    <None Include="Assets\Shader\instancingShader.frag" />
+    <None Include="Assets\Shader\debugShadow.frag" />
+    <None Include="Assets\Shader\debugShadow.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Texture\block.png">

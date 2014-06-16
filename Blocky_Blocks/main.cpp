@@ -59,6 +59,8 @@ static const bool ShowShadowMap = atoi(cfg.find("showShadowMap")->second.c_str()
 
 static const bool DrawContours = atoi(cfg.find("drawContours")->second.c_str()) == 0 ? false : true;
 
+static const bool CelShading = atoi(cfg.find("celShading")->second.c_str()) == 0 ? false : true;
+
 static const bool BlockyDoomMode = atoi(cfg.find("blockyDoomMode")->second.c_str()) == 0 ? false : true;
 
 static const bool GodMode = atoi(cfg.find("godMode")->second.c_str()) == 0 ? false : true;
@@ -100,7 +102,7 @@ GLuint instancingVao2;
 GLuint instancingVbo;
 GLuint instancingColorVbo;
 
-GLuint fuckvao;
+GLuint debugShadowVao;
 
 Texture2* targetTexture;
 
@@ -119,7 +121,7 @@ static void LoadWoodenCrateAsset();
 static Program* LoadShaders();
 static Program* LoadShaders2();
 static Program* LoadDepthShaders();
-static Program* LoadFuckShaders();
+static Program* LoadDebugShadowShaders();
 
 static Texture2* LoadTexture();
 static void ImportScene(const std::string& pFile);
@@ -142,7 +144,7 @@ GLuint shadowMappingVao;
 
 
 GLuint vertexbuffer;
-Program* fuckProgram;
+Program* debugShadowProgram;
 
 int main() 
 {
@@ -174,7 +176,7 @@ int main()
     collisionWorld = new btCollisionWorld(dispatcher, broadphase, collisionConfiguration);
 
     // initialise world
-    ImportScene(Assets("Models/world.model"));
+    ImportScene(Assets("Models/world2.obj"));
     LoadWorldAsset();
     CreateWorldInstance();
 
@@ -240,10 +242,10 @@ int main()
     glBindVertexArray(0);
 
 
-    glGenVertexArrays(1, &fuckvao);
-    glBindVertexArray(fuckvao);
+    glGenVertexArrays(1, &debugShadowVao);
+    glBindVertexArray(debugShadowVao);
 
-    fuckProgram = LoadFuckShaders();
+    debugShadowProgram = LoadDebugShadowShaders();
 
     static const GLfloat g_vertex_buffer_data[] = {
         -1.0f, -1.0f, 0.0f,
@@ -502,10 +504,10 @@ void draw()
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
     if (ShowShadowMap) {
-        glBindVertexArray(fuckvao);
+        glBindVertexArray(debugShadowVao);
 
         // Use our shader
-        glUseProgram(fuckProgram->object());
+        glUseProgram(debugShadowProgram->object());
 
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 
@@ -513,7 +515,7 @@ void draw()
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, depthTexture);
         // Set our "renderedTexture" sampler to user Texture Unit 0
-        glUniform1i(fuckProgram->uniform("texture"), 3);
+        glUniform1i(debugShadowProgram->uniform("texture"), 3);
 
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(0);
@@ -876,9 +878,17 @@ static Texture2* LoadTexture()
 
 static Program* LoadShaders() 
 {
-    Shader* vertexShader = new Shader(Assets("Shader/shadowVertexShader.vert").c_str(), GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader(Assets("Shader/shadowCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
-    return new Program(vertexShader, fragmentShader);
+    if(CelShading){
+        Shader* vertexShader = new Shader(Assets("Shader/shadowVertexShader.vert").c_str(), GL_VERTEX_SHADER);
+        Shader* fragmentShader = new Shader(Assets("Shader/shadowCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
+        return new Program(vertexShader, fragmentShader);
+    }
+    else{
+        Shader* vertexShader = new Shader(Assets("Shader/shadowVertexShader.vert").c_str(), GL_VERTEX_SHADER);
+        Shader* fragmentShader = new Shader(Assets("Shader/shadowFragmentShader.frag").c_str(), GL_FRAGMENT_SHADER);
+        return new Program(vertexShader, fragmentShader);
+    }
+
 }
 
 static Program* LoadShaders2() 
@@ -890,9 +900,16 @@ static Program* LoadShaders2()
 
 static Program* LoadShadersI() 
 {
-    Shader* vertexShader = new Shader(Assets("Shader/instancingShader.vert").c_str(), GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader(Assets("Shader/instancingCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
-    return new Program(vertexShader, fragmentShader);
+    if(CelShading){
+        Shader* vertexShader = new Shader(Assets("Shader/instancingShader.vert").c_str(), GL_VERTEX_SHADER);
+        Shader* fragmentShader = new Shader(Assets("Shader/instancingCelShader.frag").c_str(), GL_FRAGMENT_SHADER);
+        return new Program(vertexShader, fragmentShader);
+    }
+    else{
+        Shader* vertexShader = new Shader(Assets("Shader/instancingShader.vert").c_str(), GL_VERTEX_SHADER);
+        Shader* fragmentShader = new Shader(Assets("Shader/instancingShader.frag").c_str(), GL_FRAGMENT_SHADER);
+        return new Program(vertexShader, fragmentShader);
+    }
 }
 
 static Program* LoadShaders2I() 
@@ -908,10 +925,10 @@ static Program* LoadDepthShaders()
     return new Program(vertexShader, fragmentShader);
 }
 
-static Program* LoadFuckShaders() 
+static Program* LoadDebugShadowShaders() 
 {
-    Shader* vertexShader = new Shader(Assets("Shader/fuck.vert").c_str(), GL_VERTEX_SHADER);
-    Shader* fragmentShader = new Shader(Assets("Shader/fuck.frag").c_str(), GL_FRAGMENT_SHADER);
+    Shader* vertexShader = new Shader(Assets("Shader/debugShadow.vert").c_str(), GL_VERTEX_SHADER);
+    Shader* fragmentShader = new Shader(Assets("Shader/debugShadow.frag").c_str(), GL_FRAGMENT_SHADER);
     return new Program(vertexShader, fragmentShader);
 }
 

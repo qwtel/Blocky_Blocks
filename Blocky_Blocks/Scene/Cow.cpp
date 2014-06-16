@@ -4,7 +4,7 @@ Cow::Cow(ModelAsset* ma, Material* mat, btTriangleMesh* triMesh, std::list<Model
     ModelInstance(instances, collisionWorld)
 {
     asset = ma;
-    transform = translate(mat4(), vec3(30.5,5,-15));
+    transform = translate(mat4(), vec3(0,12,0));
     material = mat;
 
     btCollisionShape* collisionShape = new btBvhTriangleMeshShape(triMesh, false);
